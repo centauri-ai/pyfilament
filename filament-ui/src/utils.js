@@ -1,0 +1,59 @@
+import dayjs from 'dayjs';
+import duration from 'dayjs/plugin/duration';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+const TERMINAL_STATES = ['success', 'failure', 'cached', 'cancelled'];
+
+dayjs.extend(duration);
+dayjs.extend(relativeTime);
+
+function getShortUuid(uuid) {
+    return uuid.split('-')[0];
+}
+
+function isTerminalState(state) {
+    return TERMINAL_STATES.includes(state);
+}
+
+function getTaskEnd(task) {
+    let taskEnd = dayjs().toDate();
+    for (const stateTransition of task.stateTransitions) {
+        if (isTerminalState(stateTransition.toState)) {
+            taskEnd = dayjs(stateTransition.stateSince).toDate();
+            break;
+        }
+    }
+    return taskEnd;
+}
+
+function getTaskDuration(task) {
+    const taskStart = dayjs(task.createdAt).toDate().getTime();
+    const taskEnd = getTaskEnd(task).getTime();
+    return taskEnd - taskStart;
+}
+
+function getSince(timestamp, relativeTo = null) {
+    if (relativeTo) {
+        return (
+            '@' + getDurationHumanReadable(dayjs(timestamp).toDate().getTime() - dayjs(relativeTo).toDate().getTime())
+        );
+    }
+    return dayjs(timestamp).from(dayjs());
+}
+
+const getDurationHumanReadable = (duration) => {
+    let durationHumanReadable = '';
+    if (duration < 1000) {
+        durationHumanReadable = `${duration.toFixed()}ms`;
+    } else if (duration < 60000) {
+        durationHumanReadable = `${(duration / 1000).toFixed(2)}s`;
+    } else if (duration > 60 * 60 * 1000) {
+        durationHumanReadable = `${(duration / 60000).toFixed(2)}min`;
+    } else {
+        durationHumanReadable = `${dayjs.duration(duration).humanize()}`;
+    }
+
+    return durationHumanReadable;
+};
+
+export { getDurationHumanReadable, getShortUuid, getSince, getTaskDuration, getTaskEnd, isTerminalState };
