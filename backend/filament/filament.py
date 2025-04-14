@@ -368,11 +368,7 @@ class FilamentTaskRun(FilamentBaseModel):
                 task_group.start_soon(self._start_cancel_monitor, task_group)
             task_group.start_soon(self._call, task_group)
         await self._done_event.wait()
-        if self._exception:
-            if self.config.propagate:
-                raise self._exception
-            return self._exception
-        return self._result
+        return await self.result()
 
     def __await__(self):
         if not (inspect.isfunction(self.type._func) or inspect.iscoroutinefunction(self.type._func)):
@@ -404,11 +400,16 @@ class FilamentTaskRun(FilamentBaseModel):
 
             yield chunk
 
+        yield await self.result()
+
+    async def result(self):
+        if not self._done_event.is_set():
+            await self.start()
         if self._exception:
             if self.config.propagate:
                 raise self._exception
-            yield self._exception
-        yield self._result
+            return self._exception
+        return self._result
 
 
 class FilamentRemoteTaskRun(FilamentTaskRun):
@@ -417,12 +418,7 @@ class FilamentRemoteTaskRun(FilamentTaskRun):
         async for task_result_json in listen_for_task_result(self.uuid):
             pass
         task_result = FilamentTaskResult.model_validate_json(task_result_json)
-        if task_result._exception:
-            if self.config.propagate:
-                raise task_result._exception
-            return task_result._exception
-        else:
-            return task_result._result
+        return task_result.result()
 
     def __await__(self):
         return self.call().__await__()
@@ -433,12 +429,7 @@ class FilamentRemoteTaskRun(FilamentTaskRun):
         await enqueue_task_run(self)
         async for task_result_json in listen_for_task_result(self.uuid):
             task_result = FilamentTaskResult.model_validate_json(task_result_json)
-            if task_result._exception:
-                if self.config.propagate:
-                    raise task_result._exception
-                yield task_result._exception
-            else:
-                yield task_result._result
+            yield task_result.result()
 
 
 class FilamentRemoteException(Exception):
@@ -491,6 +482,13 @@ class FilamentTaskResult(FilamentBaseModel):
             self._exception = FilamentRemoteException(exc_type=exc_type, message=message, traceback=traceback)
             # args = pickle.loads(base64.b64decode(exception_dict["args"]))
             # self._exception = exc_type(*args)
+
+    def result(self):
+        if self._exception:
+            if self.config.propagate:
+                raise self._exception
+            return self._exception
+        return self._result
 
 
 class FilamentTaskType(FilamentBaseModel):
