@@ -9,19 +9,19 @@ import { TooltipProvider } from './components/ui/tooltip';
 
 function App() {
     return (
-        <TooltipProvider>
-            <TanstackContext>
-                <ApolloContext>
-                    <BrowserRouter>
+        <BrowserRouter>
+            <TooltipProvider>
+                <TanstackContext>
+                    <ApolloContext>
                         <Routes>
                             <Route path="/" element={<TaskTypesPage />} />
                             <Route path="/task-type/:taskTypeId" element={<TaskTypePage />} />
                             <Route path="/task-run/:taskRunId" element={<TaskRunPage />} />
                         </Routes>
-                    </BrowserRouter>
-                </ApolloContext>
-            </TanstackContext>
-        </TooltipProvider>
+                    </ApolloContext>
+                </TanstackContext>
+            </TooltipProvider>
+        </BrowserRouter>
     );
 }
 
