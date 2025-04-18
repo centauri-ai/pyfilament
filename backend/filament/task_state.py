@@ -1,7 +1,7 @@
 import json
 import logging
 
-from sqlmodel import Session, create_engine, select
+from sqlmodel import Session, create_engine, select, text
 
 from filament.db_models import TaskRun, TaskRunStateTransition, TaskState, TaskType, engine, get_utc_now
 from filament.utils import json_encode_safe
@@ -30,6 +30,7 @@ def set_heartbeat(task_uuid):
 
 def create_task_type_state(func_address, name=None):
     with Session(engine) as session:
+        session.execute(text('LOCK TABLE task_type IN EXCLUSIVE MODE'))
         statement = select(TaskType).where(TaskType.func_address == func_address)
         task_type = session.exec(statement).first()
         if task_type is not None:
