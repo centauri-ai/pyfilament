@@ -72,7 +72,7 @@ class TaskType(SQLModel, table=True):
     id: int = Field(default=None, primary_key=True)
     created_at: datetime = Field(default_factory=get_utc_now, sa_column=Column(TIMESTAMP(timezone=True)))
     name: str = Field(default=None)
-    func_address: str = Field(default=None)
+    func_address: str = Field(default=None, unique=True)
 
     task_runs: list[TaskRun] = Relationship(back_populates='task_type')
 
