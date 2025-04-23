@@ -2,7 +2,7 @@ import json
 import logging
 from datetime import datetime
 
-import redis
+from filament.redis_utils import r_sync
 
 logger = logging.getLogger(__name__)
 
@@ -19,9 +19,9 @@ class JSONFormatter(logging.Formatter):
 
 
 class RedisHandler(logging.Handler):
-    def __init__(self, redis_host='localhost', redis_port=6379, key_prefix='filament_log', max_length=None):
+    def __init__(self, key_prefix='filament_log', max_length=None):
         super().__init__()
-        self.redis = redis.Redis(host=redis_host, port=redis_port, decode_responses=True)
+        self.redis = r_sync
         self.key_prefix = key_prefix
         self.max_length = max_length
 
