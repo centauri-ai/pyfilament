@@ -20,5 +20,5 @@ def register_func(func):
 
 
 def get_func_address(func):
-    func_address = f'{func.__module__}:{func.__name__}'
+    func_address = f'{func.__module__}:{func.__qualname__}'
     return func_address
