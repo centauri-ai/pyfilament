@@ -42,16 +42,24 @@ async def g():
 
 
 @task
-async def gen_root():
+async def gen_root(remote=False):
     logger = get_logger()
+
+    # test 1: aiter
+    generator = gen()
+    # generator = gen.request(propagate=False)
     i_s = []
-    async for i in gen.request(propagate=False):
+    async for i in generator:
         logger.info('hello from gen_root, i: %s', i)
         i_s.append(i)
-    # assert i_s == list(range(10))
-    j = await gen.request(propagate=False)
+    assert i_s == list(range(10))
+
+    # test 2: call
+    generator = gen()
+    # generator = gen.request(propagate=False)
+    j = await generator
     logger.info('hello from gen_root, return result: %s', j)
-    # assert j == 9
+    assert j == 9
 
 
 @task

@@ -360,6 +360,7 @@ class FilamentTaskRun(FilamentBaseModel):
         except Exception as e:
             self._exception = e
         finally:
+            await self._result_send.aclose()
             self._done_event.set()
             task_group.cancel_scope.cancel()
             set_task_result(self.uuid, self._result, self._exception)
@@ -384,25 +385,13 @@ class FilamentTaskRun(FilamentBaseModel):
             raise TypeError(f'Unsupported function type: {get_function_type(self.type._func)}')
         self.start()
         chunk = None
-        while not self._done_event.is_set():
-            should_yield = False
-            async with anyio.create_task_group() as task_group:
-
-                async def _wait_for_done():
-                    await self._done_event.wait()
-                    task_group.cancel_scope.cancel()
-
-                async def _wait_for_result():
-                    nonlocal chunk, should_yield
-                    chunk = await self._result_receive.receive()
-                    should_yield = True  # just in case chunk is None
-                    task_group.cancel_scope.cancel()
-
-                task_group.start_soon(_wait_for_result)
-                task_group.start_soon(_wait_for_done)
-            if should_yield:
+        while True:
+            try:
+                chunk = await self._result_receive.receive()
                 yield chunk
-        # in case the last chunk has an exception
+            except anyio.EndOfStream:
+                break
+        await self._done_event.wait()
         result = await self.result()
         if result != chunk:
             yield result
@@ -421,13 +410,16 @@ class FilamentRemoteTaskRun(FilamentTaskRun):
     async def call(self):
         await enqueue_task_run(self)
         result, exception = None, None
-        async for task_result_json, is_final in listen_for_task_result(self.uuid):
-            # self._logger.debug(f'remote received {task_result_json}, is_final: {is_final}')
-            task_result = FilamentTaskResult.model_validate_json(task_result_json)
-            result, exception = task_result._result, task_result._exception
-            if not is_final:
-                assert exception is None, f'Exception only allowed on final chunk: {task_result._exception}'
-                await self._result_send.send(result)
+        try:
+            async for task_result_json, is_final in listen_for_task_result(self.uuid):
+                # self._logger.debug(f'remote received {task_result_json}, is_final: {is_final}')
+                task_result = FilamentTaskResult.model_validate_json(task_result_json)
+                result, exception = task_result._result, task_result._exception
+                if not is_final:
+                    assert exception is None, f'Exception only allowed on final chunk: {task_result._exception}'
+                    await self._result_send.send(result)
+        finally:
+            await self._result_send.aclose()
         assert is_final, f'Expected final result, got {task_result_json}'
         self._result, self._exception = result, exception
         self._done_event.set()
