@@ -26,13 +26,14 @@ function TaskRunPage() {
     const fetchFullTree = async (variables, depth = 1) => {
         const { data } = await refetchTaskRun(variables);
         const taskRun = data.getTaskRun;
-        const newChildTasks = [];
+        const newChildTaskPromises = [];
         if (depth > 0) {
             for (const childTask of taskRun.childTasks) {
-                const childData = await fetchFullTree({ id: childTask.id }, depth - 1);
-                newChildTasks.push(childData);
+                const childDataPromise = fetchFullTree({ id: childTask.id }, depth - 1);
+                newChildTaskPromises.push(childDataPromise);
             }
         }
+        const newChildTasks = await Promise.all(newChildTaskPromises);
         let newTaskRun = { ...taskRun, childTasks: newChildTasks };
         return newTaskRun;
     };
