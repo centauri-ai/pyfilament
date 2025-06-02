@@ -553,9 +553,26 @@ class FilamentTaskType(FilamentBaseModel):
             await publish_task_result(task_result, is_final=True, message_id=message_id)
 
     def request(self, *task_args, **task_kwargs):
-        task_run = self(*task_args, **task_kwargs)
-        task_run = FilamentRemoteTaskRun.model_validate(task_run.model_dump())
-        return task_run
+        task_run = FilamentRemoteTaskRun(
+            type=self,
+            task_args=task_args,
+            task_kwargs=task_kwargs,
+            config=self.config,
+        )
+        create_task_run_state(
+            task_uuid=task_run.uuid,
+            func_address=self.func_address,
+            name=task_run.name,
+            parameters=task_run._get_call_parameters(),
+        )
+        detect_dependency(task_run.uuid)
+        if inspect.iscoroutinefunction(self._func) or inspect.isasyncgenfunction(self._func):
+            return task_run
+        elif inspect.isfunction(self._func):
+            with anyio.from_thread.start_blocking_portal() as portal:
+                return portal.call(task_run.call)
+        else:
+            raise TypeError(f'Unsupported function type: {get_function_type(self._func)}')
 
     def __call__(self, *task_args, **task_kwargs):
         task_run = FilamentTaskRun(

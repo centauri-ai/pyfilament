@@ -39,7 +39,7 @@ async def setup_queue(task_type):
 
 async def enqueue_task_run(filament_task_run):
     stream_name = get_stream_name(filament_task_run.type)
-    logger.debug(f'{filament_task_run.uuid} enqueuing to {stream_name} with data {filament_task_run.model_dump_json()}')
+    logger.info(f'{filament_task_run.uuid} enqueuing to {stream_name} with data {filament_task_run.model_dump_json()}')
     await r.xadd(stream_name, {'json_data': filament_task_run.model_dump_json()})
     logger.info(f'{filament_task_run.uuid} enqueued to {stream_name}')
 
@@ -48,6 +48,7 @@ async def dequeue_task_run(task_type, worker_id):
     stream_name = get_stream_name(task_type)
     group_name = get_group_name()
     worker_name = f'worker:{worker_id}'
+    logger.info(f'{worker_name} attempting to read from {stream_name} for group {group_name}')
     resp = await r.xreadgroup(group_name, worker_name, streams={stream_name: '>'}, count=1, block=0)
     for _stream_name, messages in resp:
         assert _stream_name == stream_name, f'Expected stream {stream_name}, got {_stream_name}'
