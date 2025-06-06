@@ -41,7 +41,7 @@ function TaskRunPage() {
     const fetchTaskRunTree = useReactQuery({
         queryKey: ['taskRun', taskRunId],
         queryFn: async () => {
-            const result = await fetchFullTree({ id: taskRunId }, 2);
+            const result = await fetchFullTree({ id: taskRunId }, 1);
             setSelectedTask(result);
             return result;
         },
