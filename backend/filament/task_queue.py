@@ -6,6 +6,9 @@ from filament.redis_utils import r
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_RESULT_TTL = 3600 * 24 * 3
+DEFAULT_STALE_TTL = 3600 * 24 * 3
+
 
 def get_stream_name(task_type):
     return f'filament:task:run:{task_type.name}'
@@ -61,7 +64,7 @@ async def dequeue_task_run(task_type, worker_id):
 async def publish_task_result(task_result, is_final=True, message_id=None):
     channel_name = get_channel_name(task_result.task_uuid)
     logger.debug(f'{task_result.task_uuid} publishing to {channel_name} with data {task_result.model_dump_json()}')
-    await r.set(channel_name, task_result.model_dump_json())
+    await r.set(channel_name, task_result.model_dump_json(), ex=DEFAULT_RESULT_TTL)
     if is_final:
         await r.publish(channel_name, 'complete')
         if message_id:
