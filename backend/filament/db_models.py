@@ -80,6 +80,7 @@ class TaskRun(SQLModel, table=True):
     __table__args = (
         Index('idx_task_run_state', state.sa_column),
         Index('idx_task_run_created_at', created_at.sa_column),
+        Index('idx_task_run_state_since', state_since.sa_column),
     )
 
 
