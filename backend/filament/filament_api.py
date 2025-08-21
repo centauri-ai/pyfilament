@@ -1,33 +1,43 @@
+import logging
+
 import strawberry
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, Request
+from starlette.middleware.base import BaseHTTPMiddleware
 from strawberry.extensions import SchemaExtension
 from strawberry.fastapi import GraphQLRouter
 
 import filament.resolvers.task as task_resolver
-from filament.db_models import get_session
+from filament.db_models import Base, session_scope
 from filament.types.task import TaskRun, TaskType
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
 
-class SessionManagement(SchemaExtension):
-    # gets run once per request
-    def on_execute(self):
-        if self.execution_context.context is None:
-            self.execution_context.context = {}
-        if 'session' in self.execution_context.context:
-            yield
-        else:
-            with get_session() as session:
-                self.execution_context.context['session'] = session
-                yield
+def get_session_from_request(request: Request):
+    return request.state.session
 
-    # gets run once per nested resolver
+
+async def get_context(
+    session=Depends(get_session_from_request),
+):
+    return {
+        'session': session,
+    }
+
+
+class SessionFlusher(SchemaExtension):
     def resolve(self, _next, root, info, *args, **kwargs):
-        result = _next(root, info, *args, **kwargs)
-        # flush here so that ids are populated for session queries in nested resolvers
-        info.context['session'].flush()
-        return result
+        if (
+            info.path is not None
+            and info.path.key is not None
+            and (info.path.key == 'id' or info.path.key.endswith('_id'))
+        ):
+            if isinstance(root, Base) and getattr(root, info.path.key, None) is None:
+                if info.context is not None and 'session' in info.context:
+                    info.context['session'].flush()
+        return _next(root, info, *args, **kwargs)
 
 
 @strawberry.type
@@ -46,7 +56,7 @@ class Mutation:
 schema = strawberry.Schema(
     query=Query,
     mutation=Mutation,
-    extensions=[SessionManagement],
+    extensions=[SessionFlusher],
 )
 
 
@@ -55,7 +65,16 @@ async def root():
     return {'message': 'Hello World'}
 
 
+class SessionMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        with session_scope() as session:
+            request.state.session = session
+            return await call_next(request)
+
+
+app.add_middleware(SessionMiddleware)
 graphql_app = GraphQLRouter(
     schema,
+    context_getter=get_context,
 )
 app.include_router(graphql_app, prefix='/graphql')

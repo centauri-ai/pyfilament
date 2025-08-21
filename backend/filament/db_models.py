@@ -1,6 +1,7 @@
 import logging
 import os
 import uuid
+from contextlib import contextmanager
 from datetime import datetime
 from enum import Enum
 
@@ -109,5 +110,19 @@ class TaskRunStateTransition(SQLModel, table=True):
 # SQLModel.metadata.create_all(engine)
 
 
-def get_session():
-    return Session(engine)
+def get_session(autoflush=True):
+    return Session(engine, autoflush=autoflush)
+
+
+@contextmanager
+def session_scope(uri=None, commit=True, autoflush=True):
+    session = get_session(autoflush=autoflush)
+    try:
+        yield session
+        if commit:
+            session.commit()
+    except:
+        session.rollback()
+        raise
+    finally:
+        session.close()
