@@ -19,8 +19,8 @@ const GET_TASK_RUN_BREADCRUMB = gql`
 `;
 
 const GET_TASK_RUN = gql`
-    query GetTaskRun($id: ID!) {
-        getTaskRun(id: $id) {
+    query GetTaskRun($id: ID, $taskUuid: String) {
+        getTaskRun(id: $id, taskUuid: $taskUuid) {
             id
             taskUuid
             name

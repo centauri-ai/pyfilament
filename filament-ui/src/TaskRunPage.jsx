@@ -38,10 +38,17 @@ function TaskRunPage() {
         return newTaskRun;
     };
 
+    let initialFetchVariables = {};
+    if (taskRunId.match(/^[0-9]+$/)) {
+        initialFetchVariables.id = taskRunId;
+    } else {
+        initialFetchVariables.taskUuid = taskRunId;
+    }
+
     const fetchTaskRunTree = useReactQuery({
         queryKey: ['taskRun', taskRunId],
         queryFn: async () => {
-            const result = await fetchFullTree({ id: taskRunId }, 1);
+            const result = await fetchFullTree(initialFetchVariables, 1);
             setSelectedTask(result);
             return result;
         },
