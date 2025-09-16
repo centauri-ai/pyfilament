@@ -35,7 +35,19 @@ function TaskLink({ taskRun = null, taskType = null }) {
                                 <LinkTo url={`/task-run/${taskRun.id}`}>{getShortUuid(taskRun.taskUuid)}</LinkTo>
                             )}
                         </TooltipTrigger>
-                        <TooltipContent>{taskRun.taskUuid}</TooltipContent>
+                        <TooltipContent>
+                            <div className="flex gap-2">
+                                <span>{taskRun.taskUuid}</span>
+                                <span
+                                    className="cursor-pointer hover:underline"
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(taskRun.taskUuid);
+                                    }}
+                                >
+                                    copy
+                                </span>
+                            </div>
+                        </TooltipContent>
                     </Tooltip>
                 )}
             </a>
