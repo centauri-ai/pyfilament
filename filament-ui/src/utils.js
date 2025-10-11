@@ -17,7 +17,7 @@ function isTerminalState(state) {
 
 function getTaskEnd(task) {
     let taskEnd = dayjs().toDate();
-    for (const stateTransition of task.stateTransitions) {
+    for (const stateTransition of task.stateTransitions || []) {
         if (isTerminalState(stateTransition.toState)) {
             taskEnd = dayjs(stateTransition.stateSince).toDate();
             break;

@@ -1,3 +1,4 @@
+import json
 import logging
 
 import strawberry
@@ -5,14 +6,17 @@ from fastapi import Depends, FastAPI, Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from strawberry.extensions import SchemaExtension
 from strawberry.fastapi import GraphQLRouter
+from werkzeug.exceptions import NotFound
 
 import filament.resolvers.task as task_resolver
 
 # from filament.setup_logging import setup_logging
 from centauri.init.setup_logging import setup_logging
 from filament.db_models import Base
+from filament.db_models import TaskRun as TaskRunModel
 from filament.db_session import session_scope
 from filament.types.task import TaskRun, TaskType
+from filament.utils import avoid_nans, get_json_dict, rename_keys_to_camel_case
 
 setup_logging()
 
@@ -70,6 +74,31 @@ schema = strawberry.Schema(
 @app.get('/tasks')
 async def root():
     return {'message': 'Hello World'}
+
+
+@app.get('/api/task-run/{task_run_id}')
+async def get_task_run(request: Request, task_run_id: int):
+    with session_scope() as session:
+        task_run = session.get(TaskRunModel, task_run_id)
+        if task_run is None:
+            raise NotFound(f'TaskRun with ID {task_run_id} not found')
+        task_run_dict = get_task_run_dict(task_run)
+
+    return rename_keys_to_camel_case(task_run_dict)
+
+
+def get_task_run_dict(task_run: TaskRunModel) -> dict:
+    task_run_dict = get_json_dict(task_run)
+    task_run_dict['task_type'] = get_json_dict(task_run.task_type)
+    sorted_child_tasks = sorted(task_run.child_tasks, key=lambda x: x.id)
+    task_run_dict['child_tasks'] = [get_task_run_dict(child_task_run) for child_task_run in sorted_child_tasks]
+    sorted_state_transitions = sorted(task_run.state_transitions, key=lambda x: x.id)
+    task_run_dict['parameters_json'] = avoid_nans(task_run.parameters_json)
+    task_run_dict['result_json'] = avoid_nans(task_run.result_json)
+    task_run_dict['state_transitions'] = [
+        get_json_dict(state_transition) for state_transition in sorted_state_transitions
+    ]
+    return task_run_dict
 
 
 class SessionMiddleware(BaseHTTPMiddleware):

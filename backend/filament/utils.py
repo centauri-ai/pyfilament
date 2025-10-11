@@ -1,5 +1,7 @@
 import inspect
+import json
 import math
+import re
 import time
 import traceback
 from collections import defaultdict
@@ -7,6 +9,7 @@ from dataclasses import fields as dataclasses_fields
 from dataclasses import is_dataclass
 from datetime import datetime
 
+from inflection import camelize
 from pandas import DataFrame as PandasDataFrame
 from polars import DataFrame as PolarsDataFrame
 from pydantic import BaseModel
@@ -112,3 +115,19 @@ def json_encode_safe(obj, max_list_size=32, max_dict_size=64, max_bytes_size=102
             'type': type(obj).__name__,
             'value': str(obj),
         }
+
+
+def rename_keys_to_camel_case(obj):
+    if isinstance(obj, dict):
+        return {camelize(k, uppercase_first_letter=False): rename_keys_to_camel_case(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [rename_keys_to_camel_case(v) for v in obj]
+    return obj
+
+
+def get_json_dict(obj: BaseModel) -> dict:
+    return json.loads(obj.model_dump_json())
+
+
+def avoid_nans(obj_json: str) -> str:
+    return re.sub(r'\bNaN\b', 'null', obj_json)

@@ -7,6 +7,18 @@ from filament.db_models import TaskRun as TaskRunModel
 from filament.redis_utils import r
 
 
+async def get_logs(task_run: TaskRunModel, with_children: bool = True) -> list[dict]:
+    logs = []
+    redis_key = f'filament_log:{task_run.task_type.func_address}:{task_run.task_uuid}'
+    range_results = await r.lrange(redis_key, 0, -1)
+    for range_result in range_results:
+        logs.append(json.loads(range_result))
+    if with_children:
+        for child_task in task_run.child_tasks:
+            logs.extend(await get_logs(child_task, with_children))
+    return sorted(logs, key=lambda x: x['timestamp'])
+
+
 @strawberry.type
 class TaskRun:
     id: int
@@ -25,13 +37,9 @@ class TaskRun:
     result_json: str | None
 
     @strawberry.field
-    async def logs(self) -> list['TaskRunLog']:
-        result = []
-        redis_key = f'filament_log:{self.task_type.func_address}:{self.task_uuid}'
-        logs = await r.lrange(redis_key, 0, -1)
-        for log in logs:
-            result.append(TaskRunLog(**json.loads(log)))
-        return result
+    async def logs(self, with_children: bool = True) -> list['TaskRunLog']:
+        logs = await get_logs(self, with_children)
+        return [TaskRunLog(**log) for log in logs]
 
 
 @strawberry.type

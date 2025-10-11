@@ -44,12 +44,6 @@ const GET_TASK_RUN = gql`
                 toState
                 stateSince
             }
-            logs {
-                timestamp
-                name
-                level
-                message
-            }
             childTasks {
                 id
             }
@@ -60,10 +54,18 @@ const GET_TASK_RUN = gql`
 `;
 
 const GET_TASK_RUN_LOGS = gql`
-    query GetTaskRunLogs($id: ID!) {
+    query GetTaskRunLogs($id: ID!, $withChildren: Boolean!) {
         getTaskRun(id: $id) {
             id
-            logs {
+            taskUuid
+            stateTransitions {
+                id
+                taskUuid
+                fromState
+                toState
+                stateSince
+            }
+            logs(withChildren: $withChildren) {
                 timestamp
                 name
                 level

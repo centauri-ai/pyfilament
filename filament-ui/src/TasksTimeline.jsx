@@ -1,5 +1,7 @@
+import useResizeObserver from '@react-hook/resize-observer';
 import dayjs from 'dayjs';
-import { useContext } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
+import { TbChevronDown, TbChevronDownRight, TbChevronRight } from 'react-icons/tb';
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -8,42 +10,81 @@ import { getSince, getTaskEnd } from '@/utils';
 import TaskContext from './components/TaskContext';
 import { getDurationHumanReadable } from './utils';
 
-const TasksTimeline = ({ tasks, relativeTo }) => {
-    const minStart = Math.min(...tasks.map((task) => dayjs(task.createdAt).toDate().getTime()));
-    const maxEnd = Math.max(...tasks.map((task) => getTaskEnd(task).getTime()));
-    const spannedDuration = maxEnd - minStart;
+const TasksTimeline = ({ taskRun }) => {
+    const start = dayjs(taskRun.createdAt).toDate().getTime();
+    const end = getTaskEnd(taskRun).getTime();
+    const spannedDuration = end - start;
 
     return (
-        <div className="flex max-h-[420px] flex-col gap-2 overflow-auto">
-            {tasks.map((task) => (
-                <TaskTimelineRow
-                    key={task.id}
-                    task={task}
-                    minStart={minStart}
-                    spannedDuration={spannedDuration}
-                    relativeTo={relativeTo}
-                />
-            ))}
+        <div className="flex max-h-[420px] flex-col gap-2 overflow-x-hidden overflow-y-auto pt-[1px]">
+            <TaskTimelineRow
+                key={taskRun.id}
+                task={taskRun}
+                minStart={start}
+                spannedDuration={spannedDuration}
+                relativeTo={start}
+                isExpanded={true}
+            />
         </div>
     );
 };
 
-const getBackgroundColor = (task) => {
+const getBackgroundClass = (task) => {
     const stateColors = {
-        created: 'bg-yellow-100 border-yellow-500 border',
-        success: 'bg-green-100 border-green-500 border',
-        failure: 'bg-red-100 border-red-500 border',
-        running: 'bg-blue-100 border-blue-500 border',
-        cancelled: 'bg-neutral-100 border-neutral-500 border',
-        timeout: 'bg-orange-100 border-orange-500 border',
-        retrying: 'bg-purple-100 border-purple-500 border',
-        cached: 'bg-cyan-100 border-cyan-500 border',
+        created: 'bg-yellow-300',
+        success: 'bg-green-300',
+        failure: 'bg-red-300',
+        running: 'bg-blue-300',
+        cancelled: 'bg-neutral-300',
+        timeout: 'bg-orange-300',
+        retrying: 'bg-purple-300',
+        cached: 'bg-cyan-300',
     };
     return stateColors[task.state];
 };
 
-const TaskTimelineRow = ({ task, minStart, spannedDuration, relativeTo }) => {
+const getBorderClass = (task) => {
+    const stateColors = {
+        created: 'outline-yellow-500',
+        success: 'outline-green-500',
+        failure: 'outline-red-500',
+        running: 'outline-blue-500',
+        cancelled: 'outline-neutral-500',
+        timeout: 'outline-orange-500',
+        retrying: 'outline-purple-500',
+        cached: 'outline-cyan-500',
+    };
+    return stateColors[task.state] + ' outline outline-offset-[-1px]';
+};
+
+const getTitleClass = (task) => {
+    const stateColors = {
+        created: 'bg-yellow-200',
+        success: 'bg-green-200',
+        failure: 'bg-red-200',
+        running: 'bg-blue-200',
+        cancelled: 'bg-neutral-200',
+        timeout: 'bg-orange-200',
+        retrying: 'bg-purple-200',
+        cached: 'bg-cyan-200',
+    };
+    return stateColors[task.state];
+};
+
+const TaskTimelineRow = ({ task, minStart, spannedDuration, relativeTo, isExpanded: initIsExpanded = null }) => {
     const { selectedTask, setSelectedTask } = useContext(TaskContext);
+
+    const defaultIsExpanded = task.childTasks.length <= 3 || selectedTask?.id === task.id;
+    const [isExpanded, setIsExpanded] = useState(initIsExpanded !== null ? initIsExpanded : defaultIsExpanded);
+
+    useEffect(() => {
+        if (selectedTask?.id === task.id) {
+            setIsExpanded(true);
+        }
+    }, [selectedTask]);
+
+    const titleRef = useRef(null);
+    const parentRef = useRef(null);
 
     const taskStart = dayjs(task.createdAt).toDate().getTime();
     const taskEnd = getTaskEnd(task).getTime();
@@ -58,29 +99,99 @@ const TaskTimelineRow = ({ task, minStart, spannedDuration, relativeTo }) => {
     const endRelative = getSince(taskEnd, relativeTo);
     const tooltip = `${startRelative} - ${endRelative} (${durationHumanReadable})`;
 
+    const handleExpand = (e) => {
+        e.stopPropagation();
+        setIsExpanded(!isExpanded);
+    };
+
+    const [titleRefDimensions, setTitleRefDimensions] = useState(null);
+    const [parentRefDimensions, setParentRefDimensions] = useState(null);
+
+    useResizeObserver(titleRef, (entry) => {
+        if (titleRef.current) {
+            setTitleRefDimensions(entry.contentRect);
+        }
+    });
+
+    useResizeObserver(parentRef, (entry) => {
+        if (parentRef.current) {
+            setParentRefDimensions(entry.contentRect);
+        }
+    });
+
     return (
-        <div className="flex items-center">
-            <Tooltip delayDuration={500}>
-                <TooltipTrigger asChild>
-                    <div
-                        style={{
-                            marginLeft: `${left}%`,
-                            width: `${width}%`,
-                        }}
-                        className={cn(
-                            'cursor-pointer rounded p-1 text-nowrap hover:underline',
-                            {
-                                underline: selectedTask?.id === task.id,
-                            },
-                            getBackgroundColor(task)
-                        )}
-                        onClick={() => setSelectedTask(task)}
-                    >
-                        {name}
-                    </div>
-                </TooltipTrigger>
-                <TooltipContent>{tooltip}</TooltipContent>
-            </Tooltip>
+        <div className={cn('mt-[-1px] outline outline-offset-[-1px]')} ref={parentRef}>
+            <div className="flex items-center">
+                <Tooltip delayDuration={500}>
+                    <TooltipTrigger asChild>
+                        <div
+                            style={{
+                                marginLeft: `${Math.round(left)}%`,
+                                width: `max(${Math.round(width)}%, 32px)`,
+                                height: '32px',
+                            }}
+                            className={cn('relative flex items-center', getTitleClass(task), getBorderClass(task), {
+                                'bg-blue-200': selectedTask?.id === task.id,
+                                'text-blue-500': selectedTask?.id === task.id,
+                            })}
+                            onClick={() => setSelectedTask(task)}
+                            ref={titleRef}
+                        >
+                            <div className="flex items-center">
+                                <div
+                                    onClick={handleExpand}
+                                    className={cn('flex h-[32px] w-[32px] items-center justify-center', {
+                                        'cursor-pointer': task.childTasks.length > 0,
+                                    })}
+                                >
+                                    {task.childTasks.length === 0 ? (
+                                        <TbChevronDownRight className="h-4 w-4" />
+                                    ) : isExpanded ? (
+                                        <TbChevronDown className="h-4 w-4" />
+                                    ) : (
+                                        <TbChevronRight className="h-4 w-4" />
+                                    )}
+                                </div>
+                                <span
+                                    className={cn('z-10 cursor-pointer text-nowrap hover:underline', {
+                                        underline: selectedTask?.id === task.id,
+                                    })}
+                                >
+                                    {name}
+                                </span>
+                                {titleRefDimensions && parentRefDimensions && (
+                                    <div
+                                        className={cn(
+                                            'pointer-events-none absolute top-0 left-0 outline outline-offset-[-1px]',
+                                            getBorderClass(task)
+                                        )}
+                                        style={{
+                                            width: titleRefDimensions.width,
+                                            height: parentRefDimensions.height,
+                                        }}
+                                    >
+                                        <div className={cn('h-full w-full opacity-5', getBackgroundClass(task))} />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </TooltipTrigger>
+                    <TooltipContent>{tooltip}</TooltipContent>
+                </Tooltip>
+            </div>
+            {isExpanded && (
+                <div className="">
+                    {task.childTasks.map((childTask) => (
+                        <TaskTimelineRow
+                            key={childTask.id}
+                            task={childTask}
+                            minStart={minStart}
+                            spannedDuration={spannedDuration}
+                            relativeTo={relativeTo}
+                        />
+                    ))}
+                </div>
+            )}
         </div>
     );
 };

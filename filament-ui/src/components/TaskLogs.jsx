@@ -1,6 +1,7 @@
+import { useQuery } from '@apollo/client';
 import dayjs from 'dayjs';
 import _ from 'lodash';
-import { useContext, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 
 import CheckboxLabel from '@/components/CheckboxLabel';
 import HumanTime from '@/components/HumanTime';
@@ -12,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { GET_TASK_RUN_LOGS } from '@/queries';
 
 const getEventTime = (taskOrStateTransition) => {
     if (taskOrStateTransition.__typename == 'TaskRunStateTransition') {
@@ -27,6 +29,31 @@ const logLevelHierarchy = ['DEBUG', 'INFO', 'WARNING', 'ERROR'];
 
 function TaskLogs({ taskRun }) {
     const [shouldShowChildren, setShouldShowChildren] = useState(true);
+    const getTaskRunLogsQuery = useQuery(GET_TASK_RUN_LOGS, {
+        variables: { id: taskRun.id, withChildren: shouldShowChildren },
+    });
+
+    useEffect(() => {
+        getTaskRunLogsQuery.refetch();
+    }, [shouldShowChildren]);
+
+    if (getTaskRunLogsQuery.loading) {
+        return <p>Loading...</p>;
+    }
+    if (getTaskRunLogsQuery.error) {
+        return <p>Error: {getTaskRunLogsQuery.error.message}</p>;
+    }
+    const taskRunWithLogs = getTaskRunLogsQuery.data.getTaskRun;
+    return (
+        <_TaskLogs
+            taskRun={taskRunWithLogs}
+            shouldShowChildren={shouldShowChildren}
+            setShouldShowChildren={setShouldShowChildren}
+        />
+    );
+}
+
+function _TaskLogs({ taskRun, shouldShowChildren, setShouldShowChildren }) {
     const [shouldShowLogs, setShouldShowLogs] = useState(true);
     const [shouldShowStateTransitions, setShouldShowStateTransitions] = useState(true);
     const [shouldExpandJSON, setShouldExpandJSON] = useState(false);
@@ -38,11 +65,6 @@ function TaskLogs({ taskRun }) {
         for (const log of logs) {
             log.taskRun = taskRun;
         }
-        if (shouldShowChildren) {
-            for (const childTask of taskRun.childTasks) {
-                logs = [...logs, ...flattenLogs(childTask)];
-            }
-        }
         return logs.sort((a, b) => a.timestamp - b.timestamp);
     };
 
@@ -50,11 +72,6 @@ function TaskLogs({ taskRun }) {
         let states = _.cloneDeep(taskRun.stateTransitions);
         for (const state of states) {
             state.taskRun = taskRun;
-        }
-        if (shouldShowChildren) {
-            for (const childTask of taskRun.childTasks) {
-                states = [...states, ...flattenStateTransitions(childTask)];
-            }
         }
         return _.sortBy(states, (state) => state.stateSince);
     };
