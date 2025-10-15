@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client';
 import _ from 'lodash';
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 
 import ExpandableMessage from '@/components/ExpandableMessage';
 import HumanTime from '@/components/HumanTime';
@@ -13,19 +13,7 @@ import TaskLink from '@/components/TaskLink';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 import { GET_TASK_RUNS, GET_TASK_TYPE } from './queries';
-
-const INCOMPLETE_STATES = ['created', 'running', 'timeout', 'retrying'];
-const SUCCESS_STATES = ['success', 'cached'];
-const FAILURE_STATES = ['failure', 'cancelled'];
-const COMPLETE_STATES = [...SUCCESS_STATES, ...FAILURE_STATES];
-const ALL_STATES = [...INCOMPLETE_STATES, ...COMPLETE_STATES];
-
-const STATE_FILTERS = {
-    all: ALL_STATES,
-    incomplete: INCOMPLETE_STATES,
-    success: SUCCESS_STATES,
-    failure: FAILURE_STATES,
-};
+import { getStates } from './utils/states';
 
 function TaskTypePage() {
     const { taskTypeId } = useParams();
@@ -36,11 +24,9 @@ function TaskTypePage() {
     const getTaskRunsQuery = useQuery(GET_TASK_RUNS, {
         variables: {
             taskTypeId,
-            states: STATE_FILTERS[stateFilter],
+            states: getStates(stateFilter),
         },
     });
-
-    const navigate = useNavigate();
 
     if (getTaskTypeQuery.loading || getTaskRunsQuery.loading) {
         return <p>Loading...</p>;
