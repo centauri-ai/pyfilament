@@ -23,10 +23,7 @@ from filament.cache_utils import (
     cache_has_key,
     cache_set,
 )
-from filament.func_registry import (
-    lookup_func,
-    register_func,
-)
+from filament.func_registry import lookup_func_entry, register_func
 from filament.module_type_registry import lookup_module_type, register_module_type
 from filament.redis_handler import JSONFormatter, RedisHandler
 from filament.redis_semaphore import RedisSemaphore
@@ -533,10 +530,10 @@ class FilamentTaskType(FilamentBaseModel):
         **config_kwargs,
     ):
         if _func is not None:
-            func_address = register_func(_func)
+            func_address = register_func(_func).func_address
         else:
             assert func_address is not None, 'func_address must be provided if func is not'
-            _func = lookup_func(func_address)
+            _func = lookup_func_entry(func_address).func
         if name is None:
             name = func_address
         config = FilamentTaskConfig(**config_kwargs)
@@ -550,8 +547,9 @@ class FilamentTaskType(FilamentBaseModel):
         ignore_logger(func_address)  # use sentry_sdk.capture_exception instead
 
     def model_post_init(self, __context):
-        self._func = lookup_func(self.func_address)
-        create_task_type_state(self.func_address, name=self.name, func=self._func)
+        func_entry = lookup_func_entry(self.func_address)
+        self._func = func_entry.func
+        create_task_type_state(func_entry, name=self.name)
 
     async def serve(self):
         worker_id = str(uuid4())

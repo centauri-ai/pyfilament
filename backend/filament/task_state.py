@@ -11,6 +11,7 @@ from sqlalchemy import text
 
 from filament.db_models import TaskRun, TaskRunStateTransition, TaskState, TaskType, get_utc_now
 from filament.db_session import session_scope
+from filament.func_registry import FuncRegistryEntry
 from filament.utils import json_encode_safe
 
 logger = logging.getLogger(__name__)
@@ -31,23 +32,24 @@ def set_heartbeat(task_uuid):
         session.commit()
 
 
-def create_task_type_state(func_address, name=None, func=None, class_=None):
+def create_task_type_state(func_entry: FuncRegistryEntry, name=None):
     with session_scope() as session:
         session.execute(text('LOCK TABLE task_type IN EXCLUSIVE MODE'))
-        query = session.query(TaskType).where(TaskType.func_address == func_address)
+        query = session.query(TaskType).where(TaskType.func_address == func_entry.func_address)
         task_type = query.one_or_none()
-        if func is not None:
-            input_json_schema = get_parameters_spec(func, name, class_)
-            output_json_schema = get_result_spec(func)
+        input_json_schema = get_parameters_spec(func_entry, name)
+        output_json_schema = get_result_spec(func_entry)
         if task_type is not None:
             if name is not None:
                 task_type.name = name
-            if func is not None:
-                task_type.parameters_spec = input_json_schema
-                task_type.result_spec = output_json_schema
+            task_type.parameters_spec = input_json_schema
+            task_type.result_spec = output_json_schema
         else:
             task_type = TaskType(
-                name=name, func_address=func_address, parameters_spec=input_json_schema, result_spec=output_json_schema
+                name=name,
+                func_address=func_entry.func_address,
+                parameters_spec=input_json_schema,
+                result_spec=output_json_schema,
             )
             session.add(task_type)
         session.commit()
@@ -67,7 +69,8 @@ def is_optional(type_):
     return isinstance(hint, UnionTypeHint) and NoneType in hint.args
 
 
-def get_parameters_spec(func, func_name=None, class_=None) -> str | None:
+def get_parameters_spec(func_entry: FuncRegistryEntry, func_name: str | None = None) -> str | None:
+    func, class_ = func_entry.func, func_entry.class_
     signature = inspect.signature(func)
     allowed_types = {}
     for param_name, param in signature.parameters.items():
@@ -106,8 +109,8 @@ def get_parameters_spec(func, func_name=None, class_=None) -> str | None:
         return None
 
 
-def get_result_spec(func) -> str | None:
-    signature = inspect.signature(func)
+def get_result_spec(func_entry: FuncRegistryEntry) -> str | None:
+    signature = inspect.signature(func_entry.func)
     if signature.return_annotation != inspect.Signature.empty:
         output_format = signature.return_annotation
         if isinstance(output_format, type) and issubclass(output_format, pydantic.BaseModel):
