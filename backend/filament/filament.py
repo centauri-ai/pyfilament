@@ -149,11 +149,11 @@ class FilamentTaskRun(FilamentBaseModel):
                     task_kwargs.pop(config_name)
                 setattr(config, config_name, config_value)
 
-        if name is None:
-            name = f'{type.name}({get_arg_name(*task_args, **task_kwargs)})'
-
         if uuid is None:
             uuid = str(uuid4())
+
+        if name is None:
+            name = f'{type.name}({uuid})'
 
         super().__init__(
             name=name,
