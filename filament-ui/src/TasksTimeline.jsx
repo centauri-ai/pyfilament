@@ -114,7 +114,7 @@ const TaskTimelineRow = ({
     const durationHumanReadable = getDurationHumanReadable(taskDuration);
     const startRelative = getSince(taskStart, relativeTo);
     const endRelative = getSince(taskEnd, relativeTo);
-    const tooltip = `${startRelative} - ${endRelative} (${durationHumanReadable})`;
+    const tooltip = `${name} ${startRelative} - ${endRelative} (${durationHumanReadable})`;
 
     const handleExpand = (e) => {
         e.stopPropagation();
