@@ -1,7 +1,9 @@
 import datetime
 import json
 
+from sqlalchemy import select
 from sqlalchemy.orm import aliased
+from sqlalchemy.sql import func
 from strawberry import ID
 from werkzeug.exceptions import BadRequest, NotFound
 
@@ -99,8 +101,18 @@ async def get_task_runs_by_ids(self, info, ids: list[int]) -> list[TaskRun]:
 async def get_task_types(self, info):
     session = info.context['session']
     today = datetime.datetime.now()
-    before = today - datetime.timedelta(days=30)
-    task_types = session.query(TaskTypeModel).join(TaskRunModel).filter(TaskRunModel.created_at > before).all()
+    before = today - datetime.timedelta(days=14)
+    subquery = (
+        select(TaskRunModel.task_type_id, func.max(TaskRunModel.id).label('task_run_id'))
+        .filter(TaskRunModel.created_at > before)
+        .group_by(TaskRunModel.task_type_id)
+        .subquery()
+    )
+    task_types_statement = select(TaskTypeModel).join(
+        subquery,
+        TaskTypeModel.id == subquery.c.task_type_id,
+    )
+    task_types = session.execute(task_types_statement).scalars().all()
     return task_types
 
 
