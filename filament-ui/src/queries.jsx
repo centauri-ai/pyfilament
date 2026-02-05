@@ -83,18 +83,6 @@ const GET_TASK_TYPE = gql`
             funcAddress
             parametersSpec
             resultSpec
-            taskRuns {
-                id
-                taskUuid
-                name
-                createdAt
-                state
-                stateSince
-                heartbeat
-                runCount
-                parentTaskUuid
-                parametersJson
-            }
         }
     }
 `;
