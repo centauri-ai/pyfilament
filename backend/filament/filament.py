@@ -756,7 +756,7 @@ async def generate_remote_task_run_results(task_uuid, propagate=False, check_sta
 
 async def wait_for_task(task_uuid, check_state_interval=1):
     while True:
-        task_run = get_task_run_dict(task_uuid)
+        task_run = await get_task_run_dict(task_uuid)
         if task_run['state'] in TaskState.TERMINAL:
             break
         await anyio.sleep(check_state_interval)
