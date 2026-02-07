@@ -155,6 +155,23 @@ def get_result_spec(func_entry: FuncRegistryEntry) -> str | None:
 
 @with_session
 @beartype
+def get_task_run_state(session: Session, task_uuid: str) -> TaskRun | None:
+    query = session.query(TaskRun).where(TaskRun.task_uuid == task_uuid)
+    task_run = query.one_or_none()
+    return task_run
+
+
+@with_session
+@beartype
+async def get_task_run_dict(session: Session, task_uuid: str) -> dict | None:
+    task_run = get_task_run_state(session, task_uuid)
+    if task_run is not None:
+        return get_json_dict(task_run)
+    return None
+
+
+@with_session
+@beartype
 def create_task_run_state(
     session: Session, task_uuid: str, func_address: str, name: str | None = None, parameters: dict | None = None
 ) -> None:
@@ -194,14 +211,6 @@ def set_task_result(session: Session, task_uuid: str, result: Any, exception: Ba
     if exception is not None:
         result = exception
     task_run.result_json = json.dumps(json_encode_safe(result), separators=(',', ':'), default=str)
-
-
-@with_session
-@beartype
-async def get_task_run_dict(session: Session, task_uuid: str) -> dict:
-    query = session.query(TaskRun).where(TaskRun.task_uuid == task_uuid)
-    task_run = query.one()
-    return get_json_dict(task_run)
 
 
 @with_session

@@ -41,6 +41,7 @@ from filament.task_state import (
     TaskState,
     create_task_run_state,
     get_parent_task_uuid,
+    get_task_run_state,
     is_canceled,
     set_heartbeat,
     set_parent_task_uuid,
@@ -400,6 +401,7 @@ class FilamentTaskRun(FilamentBaseModel):
             set_task_result(self.uuid, self._result, self._exception)
 
     async def call(self):
+        initialize_task_run_state(self)
         async with anyio.create_task_group() as task_group:
             if self.config.heartbeat:
                 task_group.start_soon(self._start_heartbeat)
@@ -442,6 +444,7 @@ class FilamentTaskRun(FilamentBaseModel):
 
 class FilamentRemoteTaskRun(FilamentTaskRun):
     async def call(self):
+        initialize_task_run_state(self)
         await enqueue_task_run(self)
         result, exception = None, None
         try:
@@ -612,25 +615,21 @@ class FilamentTaskType(FilamentBaseModel):
 
     @beartype
     def _request(self, task_args: tuple, task_kwargs: dict) -> FilamentTaskRun:
-        task_run = FilamentRemoteTaskRun(
+        return FilamentRemoteTaskRun(
             type=self,
             task_args=task_args,
             task_kwargs=task_kwargs,
             config=self.config,
         )
-        initialize_task_run_state(task_run)
-        return task_run
 
     @beartype
     def __call__(self, *task_args, **task_kwargs) -> FilamentTaskRun:
-        task_run = FilamentTaskRun(
+        return FilamentTaskRun(
             type=self,
             task_args=task_args,
             task_kwargs=task_kwargs,
             config=self.config,
         )
-        initialize_task_run_state(task_run)
-        return task_run
 
     def __get__(self, instance, owner):
         if instance is None:
@@ -640,16 +639,18 @@ class FilamentTaskType(FilamentBaseModel):
 
 def initialize_task_run_state(task_run: FilamentTaskRun) -> None:
     with session_scope() as session:
-        create_task_run_state(
-            session=session,
-            task_uuid=task_run.uuid,
-            func_address=task_run.type.func_address,
-            name=task_run.name,
-            parameters=task_run._get_call_parameters(),
-        )
-        parent_task_run = peek_task_run()
-        if parent_task_run is not None:
-            set_parent_task_uuid(session, task_run.uuid, parent_task_run.uuid)
+        task_run_state = get_task_run_state(session, task_run.uuid)
+        if task_run_state is None:
+            create_task_run_state(
+                session=session,
+                task_uuid=task_run.uuid,
+                func_address=task_run.type.func_address,
+                name=task_run.name,
+                parameters=task_run._get_call_parameters(),
+            )
+            parent_task_run = peek_task_run()
+            if parent_task_run is not None:
+                set_parent_task_uuid(session, task_run.uuid, parent_task_run.uuid)
 
 
 def get_logger():
