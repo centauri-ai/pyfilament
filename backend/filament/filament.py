@@ -13,6 +13,7 @@ from uuid import uuid4
 
 import anyio
 import sentry_sdk
+from beartype import beartype
 from pydantic import BaseModel, Field, PrivateAttr
 from sentry_sdk.integrations.logging import ignore_logger
 
@@ -22,6 +23,7 @@ from filament.cache_utils import (
     cache_has_key,
     cache_set,
 )
+from filament.db_session import session_scope
 from filament.func_registry import lookup_func_entry, register_func
 from filament.logic.task_type_registry import register as register_task_type
 from filament.module_type_registry import lookup_module_type, register_module_type
@@ -604,9 +606,11 @@ class FilamentTaskType(FilamentBaseModel):
             )
             await publish_task_result(task_result, is_final=True, message_id=message_id)
 
-    def request(self, *task_args, **task_kwargs):
+    @beartype
+    def request(self, *task_args, **task_kwargs) -> FilamentTaskRun:
         return self._request(task_args, task_kwargs)
 
+    @beartype
     def _request(self, task_args: tuple, task_kwargs: dict) -> FilamentTaskRun:
         task_run = FilamentRemoteTaskRun(
             type=self,
@@ -614,47 +618,38 @@ class FilamentTaskType(FilamentBaseModel):
             task_kwargs=task_kwargs,
             config=self.config,
         )
-        create_task_run_state(
-            task_uuid=task_run.uuid,
-            func_address=self.func_address,
-            name=task_run.name,
-            parameters=task_run._get_call_parameters(),
-        )
-        detect_dependency(task_run.uuid)
-        if inspect.iscoroutinefunction(self._func) or inspect.isasyncgenfunction(self._func):
-            return task_run
-        elif inspect.isfunction(self._func):
-            with anyio.from_thread.start_blocking_portal() as portal:
-                return portal.call(task_run.call)
-        else:
-            raise TypeError(f'Unsupported function type: {get_function_type(self._func)}')
+        initialize_task_run_state(task_run)
+        return task_run
 
-    def __call__(self, *task_args, **task_kwargs):
+    @beartype
+    def __call__(self, *task_args, **task_kwargs) -> FilamentTaskRun:
         task_run = FilamentTaskRun(
             type=self,
             task_args=task_args,
             task_kwargs=task_kwargs,
             config=self.config,
         )
-        create_task_run_state(
-            task_uuid=task_run.uuid,
-            func_address=self.func_address,
-            name=task_run.name,
-            parameters=task_run._get_call_parameters(),
-        )
-        detect_dependency(task_run.uuid)
-        if inspect.iscoroutinefunction(self._func) or inspect.isasyncgenfunction(self._func):
-            return task_run
-        elif inspect.isfunction(self._func):
-            with anyio.from_thread.start_blocking_portal() as portal:
-                return portal.call(task_run.call)
-        else:
-            raise TypeError(f'Unsupported function type: {get_function_type(self._func)}')
+        initialize_task_run_state(task_run)
+        return task_run
 
     def __get__(self, instance, owner):
         if instance is None:
             return self
         return types.MethodType(self, instance)
+
+
+def initialize_task_run_state(task_run: FilamentTaskRun) -> None:
+    with session_scope() as session:
+        create_task_run_state(
+            session=session,
+            task_uuid=task_run.uuid,
+            func_address=task_run.type.func_address,
+            name=task_run.name,
+            parameters=task_run._get_call_parameters(),
+        )
+        parent_task_run = peek_task_run()
+        if parent_task_run is not None:
+            set_parent_task_uuid(session, task_run.uuid, parent_task_run.uuid)
 
 
 def get_logger():
@@ -666,12 +661,6 @@ def get_logger():
     parent_frame_module_name = parent_frame.f_globals.get('__name__', 'unknown')
     parent_frame_func_name = parent_frame.f_code.co_name
     return logging.getLogger(f'{parent_frame_module_name}:{parent_frame_func_name}')
-
-
-def detect_dependency(task_uuid):
-    parent_task_run = peek_task_run()
-    if parent_task_run is not None:
-        set_parent_task_uuid(task_uuid, parent_task_run.uuid)
 
 
 def task(*wrapper_args, **wrapper_kwargs):
