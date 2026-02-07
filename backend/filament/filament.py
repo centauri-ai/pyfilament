@@ -697,18 +697,6 @@ def task(*wrapper_args, **wrapper_kwargs):
     return get_wrapper
 
 
-def lookup(task_address: str) -> FilamentTaskType:
-    if task_address not in TASK_TYPE_REGISTRY:
-        module_name, func_name = task_address.split(':')
-        __import__(module_name, fromlist=[func_name])
-    assert task_address in TASK_TYPE_REGISTRY, f'Task {task_address} not found'
-    return TASK_TYPE_REGISTRY.get(task_address)
-
-
-def print_task_registry():
-    print(TASK_TYPE_REGISTRY.keys())
-
-
 async def wait_for_remote_task_run(task_uuid, propagate=True, timeout=None):
     with anyio.fail_after(timeout):
         # TODO: propagate exceptions
