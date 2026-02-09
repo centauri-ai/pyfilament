@@ -130,7 +130,6 @@ async def cancel_task_run(self, info, id: ID | None = None, task_uuid: str | Non
     if not task_run:
         raise NotFound(f'TaskRun with UUID {task_uuid} not found')
     await logic_cancel_task_run(session, task_run)
-    session.commit()
     return task_run
 
 
