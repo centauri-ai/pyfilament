@@ -10,13 +10,13 @@ def lookup_module_type(address: str) -> type:
     return _MODULE_TYPE_REGISTRY[address]
 
 
+def get_module_type_address(type_: type) -> str:
+    return f'{type_.__module__}:{type_.__qualname__}'
+
+
 def register_module_type(type_: type) -> str:
     address = get_module_type_address(type_)
     if address in _MODULE_TYPE_REGISTRY:
         return address
     _MODULE_TYPE_REGISTRY[address] = type_
     return address
-
-
-def get_module_type_address(type_: type) -> str:
-    return f'{type_.__module__}:{type_.__qualname__}'
