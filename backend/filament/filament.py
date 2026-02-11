@@ -399,8 +399,8 @@ class FilamentTaskRun(FilamentBaseModel):
         finally:
             await self._result_send.aclose()
             self._done_event.set()
-            task_group.cancel_scope.cancel()
             await set_task_result(self.uuid, self._result, self._exception)
+            task_group.cancel_scope.cancel()
 
     async def call(self):
         await initialize_task_run_state(self)
