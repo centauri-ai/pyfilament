@@ -58,13 +58,14 @@ async def set_heartbeat(session: AsyncSession, task_uuid: str) -> None:
 
 @with_session
 @beartype
-async def create_task_type_state(session: AsyncSession, func_entry: FuncRegistryEntry, name: str | None = None) -> None:
+async def create_task_type_state(session: AsyncSession, func_entry: FuncRegistryEntry) -> None:
+    name = func_entry.name
     input_json_schema = get_parameters_spec(func_entry, name)
     output_json_schema = get_result_spec(func_entry)
     statement = select(TaskType).where(TaskType.func_address == func_entry.func_address)
     task_type = (await session.execute(statement)).scalars().one_or_none()
     if task_type is not None:
-        if name is not None:
+        if task_type.name != name:
             task_type.name = name
         if task_type.parameters_spec != input_json_schema:
             task_type.parameters_spec = input_json_schema
