@@ -624,6 +624,7 @@ class FilamentTaskType(FilamentBaseModel):
             config=self.config,
         )
         await initialize_task_run_state(task_run)
+        return task_run
 
     @beartype
     def __call__(self, *task_args, **task_kwargs) -> FilamentTaskRun:
