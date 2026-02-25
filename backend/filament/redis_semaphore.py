@@ -44,7 +44,7 @@ class RedisSemaphore:
         await self.release()
 
     async def acquire(self, timeout=None):
-        logger.info(f'Acquiring semaphore {self.name} with client_id {self.client_id}')
+        logger.debug(f'Acquiring semaphore {self.name} with client_id {self.client_id}')
         with anyio.fail_after(timeout):
             async with anyio.create_task_group() as tg:
                 tg.start_soon(self._start_heartbeat)
@@ -53,7 +53,7 @@ class RedisSemaphore:
 
     async def _start_heartbeat(self):
         while True:
-            logger.info(f'Updating heartbeat for semaphore {self.name} with client_id {self.client_id}')
+            logger.debug(f'Updating heartbeat for semaphore {self.name} with client_id {self.client_id}')
             # Update the heartbeat in the zset
             await self.redis.zadd(
                 self.heartbeat_zset,
@@ -81,20 +81,20 @@ class RedisSemaphore:
                 keys=[self.waiters_queue],
                 args=[self.client_id],
             )
-            logger.info(f'Running cleanup script for semaphore {self.name} from client_id {self.client_id}')
+            logger.debug(f'Running cleanup script for semaphore {self.name} from client_id {self.client_id}')
             await self._lua_eval(
                 self._lua_cleanup_stale_clients(),
                 keys=[self.holders_zset, self.waiters_queue, self.heartbeat_zset],
                 args=[now()],
             )
             await self._log_state()
-            logger.info(f'Attempting to acquire semaphore {self.name} with client_id {self.client_id}')
+            logger.debug(f'Attempting to acquire semaphore {self.name} with client_id {self.client_id}')
             acquired = await self._lua_eval(
                 self._lua_acquire_and_dequeue(),
                 keys=[self.holders_zset, self.waiters_queue, self.heartbeat_zset],
                 args=[self.client_id, self.max_leases, self.ttl, now(ceil=True)],
             )
-            logger.info(
+            logger.debug(
                 f'Attempt to acquire semaphore {self.name} with client_id {self.client_id} returned: {acquired}'
             )
             if acquired:
@@ -176,11 +176,11 @@ class RedisSemaphore:
         if len(earliest_holders) == 0:
             first_waiter = await self.redis.lindex(self.waiters_queue, 0)
             if first_waiter is None or first_waiter == self.client_id:
-                logger.info(f'No waiters in queue for semaphore {self.name}. Proceeding without waiting.')
+                logger.debug(f'No waiters in queue for semaphore {self.name}. Proceeding without waiting.')
                 return
             expiry_time = await self.redis.zscore(self.heartbeat_zset, first_waiter)
             if expiry_time is None:
-                logger.info(f'First waiter {first_waiter} has no heartbeat expiry. Proceeding without waiting.')
+                logger.debug(f'First waiter {first_waiter} has no heartbeat expiry. Proceeding without waiting.')
                 return
             # # If there are no holders, wait for the first waiter's heartbeat expiry
             # delay = max(first_waiter_expires - now(), self.heartbeat_interval)
@@ -189,7 +189,7 @@ class RedisSemaphore:
             _client_id, expiry_time = earliest_holder
         delay = max(expiry_time - now(), self.heartbeat_interval)
 
-        logger.info(
+        logger.debug(
             f'Waiting for release or expiry for semaphore {self.name} with client_id {self.client_id} for {delay} seconds'
         )
         async with self._get_subscription() as pubsub:
@@ -198,7 +198,7 @@ class RedisSemaphore:
                     message = await pubsub.get_message()
                     if message and message['type'] == 'message':
                         if message['data'] == 'release':
-                            logger.info(
+                            logger.debug(
                                 f'Received release notification for semaphore {self.name} by client_id {self.client_id}. Proceeding...'
                             )
                             return
@@ -214,7 +214,7 @@ class RedisSemaphore:
             await pubsub.close()
 
     async def release(self):
-        logger.info(f'Releasing semaphore {self.name} for client_id {self.client_id}')
+        logger.debug(f'Releasing semaphore {self.name} for client_id {self.client_id}')
         has_released = await self._lua_eval(self._lua_remove_client(), keys=[self.holders_zset], args=[self.client_id])
         if has_released:
             await self.redis.publish(self.release_channel, 'release')
@@ -238,7 +238,7 @@ class RedisSemaphore:
         """
 
     async def extend(self, ttl=None):
-        logger.info(f'Extending semaphore {self.name} for client_id {self.client_id}')
+        logger.debug(f'Extending semaphore {self.name} for client_id {self.client_id}')
         new_expiry = now(ceil=True) + (ttl or self.ttl)
         # await self.redis.zadd(self.holders_zset, {self.client_id: new_expiry})
         has_extended = await self._lua_eval(
