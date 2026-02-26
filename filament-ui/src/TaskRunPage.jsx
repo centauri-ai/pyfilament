@@ -1,16 +1,17 @@
 import { useQuery } from '@apollo/client';
 import { useQuery as useReactQuery } from '@tanstack/react-query';
+import { useLocalStorage } from '@uidotdev/usehooks';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 
-import TasksTimeline from '@/TasksTimeline';
 import Panel from '@/components/Panel';
 import TaskContext from '@/components/TaskContext';
 import TaskLogs from '@/components/TaskLogs';
 import TaskRunBreadcrumbs from '@/components/TaskRunBreadcrumbs';
 import TaskRunDetails from '@/components/TaskRunDetails';
 import { GET_TASK_RUN } from '@/queries';
+import TasksTimeline from '@/TasksTimeline';
 
 export default function TaskRunPageWithUuidRedirect() {
     const { taskRunId } = useParams();
@@ -36,9 +37,9 @@ function TaskRunPageWithUuid({ taskRunUuid }) {
 
 function TaskRunPageWithId({ taskRunId }) {
     const [selectedTask, setSelectedTask] = useState(null);
-    const [searchParams] = useSearchParams();
-    let maxChildTasks = searchParams.get('maxChildTasks') || 100;
-    let childDepth = searchParams.get('childDepth') || 10;
+
+    const [maxChildTasks, ] = useLocalStorage('maxChildTasks', 100);
+    const [childDepth, ] = useLocalStorage('childDepth', 10);
 
     const fetchTaskRunTree = useReactQuery({
         queryKey: ['taskRun', 'tree', taskRunId, maxChildTasks, childDepth],
@@ -66,6 +67,7 @@ function TaskRunPageWithId({ taskRunId }) {
         <TaskContext.Provider value={{ selectedTask, setSelectedTask, rootTaskRun, fetchTaskRunTree }}>
             <div className="flex flex-col gap-4 p-4">
                 <TaskRunBreadcrumbs taskRun={rootTaskRun} />
+                <TaskRunControls />
                 <div className="flex items-start gap-4">
                     <Panel name="Timeline" className="flex-2">
                         <TasksTimeline taskRun={rootTaskRun} />
@@ -79,5 +81,31 @@ function TaskRunPageWithId({ taskRunId }) {
                 )}
             </div>
         </TaskContext.Provider>
+    );
+}
+
+function TaskRunControls() {
+    const [localStorageMaxChildTasks, setLocalStorageMaxChildTasks] = useLocalStorage('maxChildTasks', 100);
+    const [localStorageChildDepth, setLocalStorageChildDepth] = useLocalStorage('childDepth', 10);
+
+    const [maxChildTasks, setMaxChildTasks] = useState(localStorageMaxChildTasks);
+    const [childDepth, setChildDepth] = useState(localStorageChildDepth);
+
+    const onSave = () => {
+        setLocalStorageMaxChildTasks(maxChildTasks);
+        setLocalStorageChildDepth(childDepth);
+    };
+
+    const onKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            onSave();
+        }
+    };
+
+    return (
+        <div className="flex items-center gap-2">
+            maxChildTasks: <input type="number" value={maxChildTasks} onChange={(e) => setMaxChildTasks(parseInt(e.target.value))} onKeyDown={onKeyDown} />
+            childDepth: <input type="number" value={childDepth} onChange={(e) => setChildDepth(parseInt(e.target.value))} onKeyDown={onKeyDown} />
+        </div>
     );
 }
