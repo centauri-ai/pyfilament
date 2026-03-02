@@ -5,13 +5,13 @@ import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
+import TasksTimeline from '@/TasksTimeline';
 import Panel from '@/components/Panel';
 import TaskContext from '@/components/TaskContext';
 import TaskLogs from '@/components/TaskLogs';
 import TaskRunBreadcrumbs from '@/components/TaskRunBreadcrumbs';
 import TaskRunDetails from '@/components/TaskRunDetails';
 import { GET_TASK_RUN } from '@/queries';
-import TasksTimeline from '@/TasksTimeline';
 
 export default function TaskRunPageWithUuidRedirect() {
     const { taskRunId } = useParams();
@@ -38,8 +38,8 @@ function TaskRunPageWithUuid({ taskRunUuid }) {
 function TaskRunPageWithId({ taskRunId }) {
     const [selectedTask, setSelectedTask] = useState(null);
 
-    const [maxChildTasks, ] = useLocalStorage('maxChildTasks', 100);
-    const [childDepth, ] = useLocalStorage('childDepth', 10);
+    const [maxChildTasks] = useLocalStorage('maxChildTasks', 100);
+    const [childDepth] = useLocalStorage('childDepth', 10);
 
     const fetchTaskRunTree = useReactQuery({
         queryKey: ['taskRun', 'tree', taskRunId, maxChildTasks, childDepth],
@@ -104,8 +104,20 @@ function TaskRunControls() {
 
     return (
         <div className="flex items-center gap-2">
-            maxChildTasks: <input type="number" value={maxChildTasks} onChange={(e) => setMaxChildTasks(parseInt(e.target.value))} onKeyDown={onKeyDown} />
-            childDepth: <input type="number" value={childDepth} onChange={(e) => setChildDepth(parseInt(e.target.value))} onKeyDown={onKeyDown} />
+            maxChildTasks:{' '}
+            <input
+                type="number"
+                value={maxChildTasks}
+                onChange={(e) => setMaxChildTasks(parseInt(e.target.value))}
+                onKeyDown={onKeyDown}
+            />
+            childDepth:{' '}
+            <input
+                type="number"
+                value={childDepth}
+                onChange={(e) => setChildDepth(parseInt(e.target.value))}
+                onKeyDown={onKeyDown}
+            />
         </div>
     );
 }

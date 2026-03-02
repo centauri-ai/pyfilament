@@ -1,9 +1,9 @@
-import HumanTime from '@/components/HumanTime';
 import { useQuery } from '@apollo/client';
 import dayjs from 'dayjs';
 import _ from 'lodash';
 import { useSearchParams } from 'react-router-dom';
 
+import HumanTime from '@/components/HumanTime';
 import { LinkTo } from '@/components/LinkTo';
 import StateBadge from '@/components/StateBadge';
 import TaskLink from '@/components/TaskLink';

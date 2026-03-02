@@ -208,6 +208,5 @@ export {
     GET_TASK_TYPE_STACK_RUNS,
     GET_TASK_TYPES,
     GET_TASK_TYPES_BY_IDS,
-    RUN_TASK
+    RUN_TASK,
 };
-
