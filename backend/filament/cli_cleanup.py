@@ -1,15 +1,14 @@
 import logging
 import sys
 from datetime import datetime, timedelta, timezone
-from functools import partial, wraps
 
 import anyio
-import fire
 from sqlalchemy import select
 
 from filament.db_models import TaskRun, TaskState
 from filament.db_session import async_session_scope
 from filament.logic.task_run import cancel_task_run, delete_task_run
+from plasma import Plasma
 
 
 def setup_logging():
@@ -26,16 +25,6 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 
-def fire_task(async_fn):
-    @wraps(async_fn)
-    def wrapper(*args, **kwargs):
-        callback = partial(async_fn, *args, **kwargs)
-        anyio.run(callback)
-
-    return wrapper
-
-
-@fire_task
 async def main(stonith_max_heartbeat_seconds: int = 60 * 60, delete_old_task_runs_days: int = 30):
     await stonith(max_heartbeat_seconds=stonith_max_heartbeat_seconds)
     await delete_old_task_runs(days=delete_old_task_runs_days)
@@ -93,4 +82,4 @@ async def delete_old_task_runs(days: int = 30, batch_size: int = 100):
 
 
 if __name__ == '__main__':
-    fire.Fire(main)
+    Plasma(main)
