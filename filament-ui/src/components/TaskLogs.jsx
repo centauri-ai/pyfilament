@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client';
+import { useLocalStorage } from '@uidotdev/usehooks';
 import dayjs from 'dayjs';
 import _ from 'lodash';
 import { useContext, useEffect, useState } from 'react';
@@ -54,11 +55,14 @@ function TaskLogs({ taskRun }) {
 }
 
 function _TaskLogs({ taskRun, shouldShowChildren, setShouldShowChildren }) {
-    const [shouldShowLogs, setShouldShowLogs] = useState(true);
-    const [shouldShowStateTransitions, setShouldShowStateTransitions] = useState(true);
-    const [shouldExpandJSON, setShouldExpandJSON] = useState(false);
-    const [shouldNewestFirst, setShouldNewestFirst] = useState(false);
-    const [displayLogLevel, setDisplayLogLevel] = useState(logLevelHierarchy[0]);
+    const [shouldShowLogs, setShouldShowLogs] = useLocalStorage('shouldShowLogs', true);
+    const [shouldShowStateTransitions, setShouldShowStateTransitions] = useLocalStorage(
+        'shouldShowStateTransitions',
+        true
+    );
+    const [shouldExpandJSON, setShouldExpandJSON] = useLocalStorage('shouldExpandJSON', false);
+    const [shouldNewestFirst, setShouldNewestFirst] = useLocalStorage('shouldNewestFirst', false);
+    const [displayLogLevel, setDisplayLogLevel] = useLocalStorage('displayLogLevel', logLevelHierarchy[0]);
 
     const flattenLogs = (taskRun) => {
         let logs = _.cloneDeep(taskRun.logs);
