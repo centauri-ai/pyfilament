@@ -1,4 +1,4 @@
-import { useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
 import _ from 'lodash';
 import { useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';

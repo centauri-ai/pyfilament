@@ -1,4 +1,4 @@
-import { useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
 import dayjs from 'dayjs';
 import _ from 'lodash';
 import { useSearchParams } from 'react-router-dom';

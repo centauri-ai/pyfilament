@@ -1,4 +1,4 @@
-import { useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
 import { useQuery as useReactQuery } from '@tanstack/react-query';
 import { useLocalStorage } from '@uidotdev/usehooks';
 import axios from 'axios';

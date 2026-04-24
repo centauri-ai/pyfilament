@@ -1,4 +1,4 @@
-import { useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
 import { useQuery as useReactQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { createTwoFilesPatch } from 'diff';
