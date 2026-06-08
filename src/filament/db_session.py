@@ -11,6 +11,7 @@ DATABASE_URL = os.getenv('FILAMENT_DB_URI', 'sqlite://filament.db')
 
 _AIO_SCHEMES = {
     'postgresql': 'postgresql+asyncpg',
+    'sqlite': 'sqlite+aiosqlite',
 }
 
 
