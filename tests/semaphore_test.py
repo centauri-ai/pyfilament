@@ -7,13 +7,13 @@ from filament.redis.redis_semaphore import RedisSemaphore, RedisSemaphoreExcepti
 from filament.redis.redis_utils import r
 
 
-async def main():
+async def test_semaphore():
     async with anyio.create_task_group() as tg:
         for i in range(10):
-            tg.start_soon(partial(acquire_semaphore, seconds=i + 1))
+            tg.start_soon(partial(_acquire_semaphore, seconds=i + 1))
 
 
-async def acquire_semaphore(seconds=3):
+async def _acquire_semaphore(seconds=3):
     try:
         semaphore = RedisSemaphore(redis=r, name='test', max_leases=2, ttl=5)
         start = time.time()
@@ -31,11 +31,3 @@ async def acquire_semaphore(seconds=3):
         logger.info(f'Semaphore released by {semaphore.client_id} after {end - acquired:.2f} seconds')
     except RedisSemaphoreException as e:
         logger.error(str(e))
-
-
-if __name__ == '__main__':
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    )
-    anyio.run(main)
