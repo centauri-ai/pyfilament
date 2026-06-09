@@ -2,7 +2,7 @@ import logging
 
 from redis import ResponseError
 
-from filament.redis.redis_utils import r
+from filament.redis.client import r
 
 logger = logging.getLogger(__name__)
 
