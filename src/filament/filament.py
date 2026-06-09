@@ -7,7 +7,7 @@ from filament.task.registry.task_type_registry import register as register_task_
 from filament.logic.call_stack import peek_task_run
 
 
-from filament.task.task_type import FilamentTaskType
+from filament.task.types.task_type import FilamentTaskType
 
 
 def get_logger():

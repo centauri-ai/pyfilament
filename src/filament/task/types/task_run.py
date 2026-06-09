@@ -10,7 +10,6 @@ from uuid import uuid4
 
 import anyio
 from anyio.abc import TaskGroup
-from beartype import beartype
 from beartype.typing import Optional, Union
 from pydantic import Field
 
@@ -31,18 +30,18 @@ from filament.task.state.task_state import (
 )
 from filament.logic.utils import get_function_type
 from filament.logic.call_stack import pop_task_run, push_task_run
-from filament.task.base import FilamentBaseModel
-from filament.task.task_config import FilamentTaskConfig
+from filament.task.types.base import FilamentBaseModel
+from filament.task.types.task_config import FilamentTaskConfig
 from filament.task.constants import DEFAULT_HEARTBEAT_INTERVAL, DEFAULT_MONITOR_INTERVAL
 from filament.task.state.task_run_state import initialize_task_run_state
 
 if TYPE_CHECKING:
-    from filament.task.task_type import FilamentTaskType
+    from filament.task.types.task_type import FilamentTaskType
 
 
 class FilamentTaskRun(FilamentBaseModel):
-    type: 'FilamentTaskType'
-    config: 'FilamentTaskConfig' = Field(default_factory=lambda: FilamentTaskConfig())
+    type: FilamentTaskType
+    config: FilamentTaskConfig = Field(default_factory=lambda: FilamentTaskConfig())
     uuid: str
     task_args: tuple = Field(default=())
     task_kwargs: dict = Field(default={})
@@ -51,12 +50,12 @@ class FilamentTaskRun(FilamentBaseModel):
 
     def __init__(
         self,
-        type: 'FilamentTaskType',
+        type: FilamentTaskType,
         task_args,
         task_kwargs,
         name=None,
         uuid=None,
-        config: Optional[Union['FilamentTaskConfig', dict]] = None,
+        config: Optional[Union[FilamentTaskConfig, dict]] = None,
         worker_id: str | None = None,
     ):
         if config is not None:
@@ -113,13 +112,11 @@ class FilamentTaskRun(FilamentBaseModel):
         self._task = asyncio.create_task(self.call())
         return self._task
 
-    @beartype
     async def _start_heartbeat(self) -> None:
         while not self._done_event.is_set():
             await set_heartbeat(self.uuid)
             await anyio.sleep(self.config.heartbeat_interval or DEFAULT_HEARTBEAT_INTERVAL)
 
-    @beartype
     async def _start_cancel_monitor(self, task_group: TaskGroup) -> None:
         while not self._done_event.is_set():
             if await is_canceled(self.uuid):
@@ -244,7 +241,6 @@ class FilamentTaskRun(FilamentBaseModel):
 
         return wrapper
 
-    @beartype
     def _get_call_parameters(self) -> dict:
         args = self.task_args
         kwargs = self.task_kwargs
@@ -261,7 +257,6 @@ class FilamentTaskRun(FilamentBaseModel):
                     filled_parameters[name] = parameter.default
         return filled_parameters
 
-    @beartype
     async def _call(self, task_group: TaskGroup) -> None:
         try:
             async with self._transition_failure_state():

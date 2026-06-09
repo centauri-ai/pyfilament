@@ -1,14 +1,14 @@
-from beartype import beartype
+# from beartype import beartype
 
 TASK_TYPE_REGISTRY = {}
 
 
-@beartype
+# @beartype
 def register(task_type) -> None:
     TASK_TYPE_REGISTRY[task_type.func_address] = task_type
 
 
-@beartype
+# @beartype
 def lookup(task_address: str):
     if task_address not in TASK_TYPE_REGISTRY:
         module_name, func_name = task_address.split(':')
@@ -17,6 +17,6 @@ def lookup(task_address: str):
     return TASK_TYPE_REGISTRY.get(task_address)
 
 
-@beartype
+# @beartype
 def print_task_registry() -> None:
     print(TASK_TYPE_REGISTRY.keys())

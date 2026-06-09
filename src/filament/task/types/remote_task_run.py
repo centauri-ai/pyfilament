@@ -1,6 +1,5 @@
 import anyio
 from anyio.abc import TaskGroup
-from beartype import beartype
 
 from filament.task.queue.task_queue import (
     enqueue_task_run,
@@ -8,9 +7,9 @@ from filament.task.queue.task_queue import (
 )
 
 
-from filament.task.task_run import FilamentTaskRun
+from filament.task.types.task_run import FilamentTaskRun
 from filament.task.state.task_run_state import initialize_task_run_state
-from filament.task.task_result import FilamentTaskResult
+from filament.task.types.task_result import FilamentTaskResult
 
 
 class FilamentRemoteTaskRun(FilamentTaskRun):
@@ -24,7 +23,6 @@ class FilamentRemoteTaskRun(FilamentTaskRun):
         await self._done_event.wait()
         return await self.result()
 
-    @beartype
     async def _listen_for_task_result(self, task_group: TaskGroup) -> None:
         result, exception = None, None
         is_final = False

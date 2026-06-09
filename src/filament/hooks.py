@@ -5,7 +5,7 @@ from sqlalchemy import select
 
 from filament.db.models import TaskRun
 from filament.db.session import async_session_scope
-from filament.task.task_run import FilamentTaskRun
+from filament.task.types.task_run import FilamentTaskRun
 from filament.logic.func_registry import get_registered_entries
 from filament.task.state.task_run_state import cancel_task_run
 from filament.redis.semaphore import RedisSemaphore

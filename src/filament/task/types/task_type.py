@@ -4,7 +4,6 @@ import types
 from uuid import uuid4
 
 import anyio
-from beartype import beartype
 from pydantic import Field, PrivateAttr
 
 from filament.logic.func_registry import lookup_func_entry, register_func
@@ -15,11 +14,11 @@ from filament.task.queue.task_queue import (
 )
 from filament.task.state.task_run_state import initialize_task_run_state
 
-from filament.task.base import FilamentBaseModel
-from filament.task.task_config import FilamentTaskConfig
-from filament.task.task_run import FilamentTaskRun
-from filament.task.task_result import FilamentTaskResult
-from filament.task.remote_task_run import FilamentRemoteTaskRun
+from filament.task.types.base import FilamentBaseModel
+from filament.task.types.task_config import FilamentTaskConfig
+from filament.task.types.task_run import FilamentTaskRun
+from filament.task.types.task_result import FilamentTaskResult
+from filament.task.types.remote_task_run import FilamentRemoteTaskRun
 
 
 class FilamentTaskType(FilamentBaseModel):
@@ -116,11 +115,9 @@ class FilamentTaskType(FilamentBaseModel):
             )
             await publish_task_result(task_result, is_final=True, message_id=message_id)
 
-    @beartype
     async def request(self, *task_args, **task_kwargs) -> FilamentRemoteTaskRun:
         return await self._request(task_args, task_kwargs)
 
-    @beartype
     async def _request(self, task_args, task_kwargs) -> FilamentRemoteTaskRun:
         task_run = FilamentRemoteTaskRun(
             type=self,
@@ -131,7 +128,6 @@ class FilamentTaskType(FilamentBaseModel):
         await initialize_task_run_state(task_run)
         return task_run
 
-    @beartype
     def __call__(self, *task_args, **task_kwargs) -> FilamentTaskRun:
         return FilamentTaskRun(
             type=self,

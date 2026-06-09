@@ -1,10 +1,10 @@
 from pydantic import Field
 
 from filament.logic.cache_keys import hash_cache_key
-from filament.task.base import FilamentBaseModel
+from filament.task.types.base import FilamentBaseModel
 from filament.task.constants import DEFAULT_HEARTBEAT_INTERVAL, DEFAULT_MONITOR_INTERVAL
-from filament.task.exception_type import FilamentExceptionType
-from filament.task.cache_key import FilamentCacheKey
+from filament.task.types.exception_type import FilamentExceptionType
+from filament.task.types.cache_key import FilamentCacheKey
 
 
 class FilamentTaskConfig(FilamentBaseModel):
@@ -14,10 +14,10 @@ class FilamentTaskConfig(FilamentBaseModel):
     tries: int = Field(default=1)
     delay: float = Field(default=0)
     backoff_base: float = Field(default=2)
-    retry_exceptions: list['FilamentExceptionType'] = Field(default=[FilamentExceptionType(Exception)])
-    no_retry_exceptions: list['FilamentExceptionType'] = Field(default=[])
+    retry_exceptions: list[FilamentExceptionType] = Field(default=[FilamentExceptionType(Exception)])
+    no_retry_exceptions: list[FilamentExceptionType] = Field(default=[])
     cache: bool = Field(default=False)
-    cache_key: 'FilamentCacheKey' = Field(default=FilamentCacheKey(hash_cache_key))
+    cache_key: FilamentCacheKey = Field(default=FilamentCacheKey(hash_cache_key))
     cache_ttl: int | None = Field(default=None)
     refresh_cache: bool = Field(default=False)
     heartbeat: bool = Field(default=True)

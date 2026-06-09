@@ -1,7 +1,7 @@
 from pydantic import PrivateAttr
 
 from filament.logic.module_type_registry import lookup_module_type, register_module_type
-from filament.task.base import FilamentBaseModel
+from filament.task.types.base import FilamentBaseModel
 
 
 class FilamentCacheKey(FilamentBaseModel):

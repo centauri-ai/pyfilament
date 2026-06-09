@@ -6,11 +6,11 @@ from pydantic import Field, PrivateAttr
 
 from filament.logic.module_type_registry import lookup_module_type, register_module_type
 from filament.logic.utils import json_encode_safe
-from filament.task.base import FilamentBaseModel
-from filament.task.remote_exception import FilamentRemoteException
+from filament.task.types.base import FilamentBaseModel
+from filament.task.types.remote_exception import FilamentRemoteException
 
 if TYPE_CHECKING:
-    from filament.task.task_type import FilamentTaskType
+    from filament.task.types.task_type import FilamentTaskType
 
 
 class FilamentTaskResult(FilamentBaseModel):
