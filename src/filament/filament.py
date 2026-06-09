@@ -24,20 +24,20 @@ from filament.logic.cache_utils import (
 )
 from filament.db_models import TaskState
 from filament.db_session import async_session_scope
-from filament.func_registry import lookup_func_entry, register_func
+from filament.logic.func_registry import lookup_func_entry, register_func
 from filament.logic.module_type_registry import lookup_module_type, register_module_type
 from filament.logic.task_type_registry import register as register_task_type
 from filament.redis.logging_handler import JSONFormatter, RedisHandler
 from filament.redis.semaphore import RedisSemaphore
 from filament.redis.token_bucket import RedisTokenBucket
-from filament.task_queue import (
+from filament.task.task_queue import (
     dequeue_task_run,
     enqueue_task_run,
     listen_for_task_result,
     publish_task_result,
     setup_queue,
 )
-from filament.task_state import (
+from filament.task.task_state import (
     create_task_run_state,
     get_task_run_state,
     is_canceled,

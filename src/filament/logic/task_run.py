@@ -2,7 +2,7 @@ from beartype import beartype
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from filament.db_models import TaskRun, TaskState
-from filament.task_state import transition_state
+from filament.task.task_state import transition_state
 
 
 @beartype
