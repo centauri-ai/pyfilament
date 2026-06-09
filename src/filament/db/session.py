@@ -17,12 +17,14 @@ _AIO_ENGINE_KWARGS = {
     },
 }
 
+
 def _get_create_engine_kwargs(url):
     parts = urlparse(url)
     scheme = parts.scheme
     if scheme not in _AIO_ENGINE_KWARGS:
         raise ValueError(f'Unsupported async scheme: {scheme}')
     return _AIO_ENGINE_KWARGS[scheme]
+
 
 engine_kwargs = _get_create_engine_kwargs(DATABASE_URL)
 engine = create_async_engine(DATABASE_URL, **engine_kwargs)

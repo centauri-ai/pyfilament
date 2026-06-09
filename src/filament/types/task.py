@@ -5,7 +5,7 @@ import strawberry
 from strawberry import Info
 from sqlalchemy import select
 
-from filament.db_models import TaskRun as TaskRunModel
+from filament.db.models import TaskRun as TaskRunModel
 from filament.redis.client import r
 
 

@@ -1,7 +1,7 @@
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from filament.db_session import async_session_scope
+from filament.db.session import async_session_scope
 
 
 class SessionMiddleware(BaseHTTPMiddleware):

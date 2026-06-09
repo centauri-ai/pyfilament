@@ -22,8 +22,8 @@ from filament.logic.cache_utils import (
     cache_has_key,
     cache_set,
 )
-from filament.db_models import TaskState
-from filament.db_session import async_session_scope
+from filament.db.models import TaskState
+from filament.db.session import async_session_scope
 from filament.logic.func_registry import lookup_func_entry, register_func
 from filament.logic.module_type_registry import lookup_module_type, register_module_type
 from filament.task.task_type_registry import register as register_task_type

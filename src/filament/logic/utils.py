@@ -17,7 +17,7 @@ from polars import DataFrame as PolarsDataFrame
 from pydantic import BaseModel
 from sqlalchemy import inspect as sqlalchemy_inspect
 
-from filament.db_models import Base
+from filament.db.models import Base
 
 
 def get_arg_name(*args, **kwargs):

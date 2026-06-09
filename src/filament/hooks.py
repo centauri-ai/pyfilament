@@ -3,8 +3,8 @@ import logging
 from beartype import beartype
 from sqlalchemy import select
 
-from filament.db_models import TaskRun
-from filament.db_session import async_session_scope
+from filament.db.models import TaskRun
+from filament.db.session import async_session_scope
 from filament.filament import FilamentTaskRun
 from filament.logic.func_registry import get_registered_entries
 from filament.task.task_run import cancel_task_run

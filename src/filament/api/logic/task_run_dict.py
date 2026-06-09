@@ -1,6 +1,6 @@
 from beartype import beartype
 
-from filament.db_models import TaskRun as TaskRunModel
+from filament.db.models import TaskRun as TaskRunModel
 from filament.logic.utils import avoid_nans, get_json_dict
 
 

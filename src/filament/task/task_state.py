@@ -13,8 +13,8 @@ from pydantic.errors import PydanticInvalidForJsonSchema, PydanticSchemaGenerati
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from filament.db_models import TaskRun, TaskRunStateTransition, TaskState, TaskType, get_utc_now
-from filament.db_session import async_session_scope
+from filament.db.models import TaskRun, TaskRunStateTransition, TaskState, TaskType, get_utc_now
+from filament.db.session import async_session_scope
 from filament.logic.func_registry import FuncRegistryEntry
 from filament.logic.utils import get_json_dict, json_encode_safe, redact_strings
 

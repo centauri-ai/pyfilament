@@ -7,8 +7,8 @@ from sqlalchemy.sql import func
 from strawberry import ID, Info
 from werkzeug.exceptions import BadRequest, NotFound
 
-from filament.db_models import TaskRun as TaskRunModel
-from filament.db_models import TaskType as TaskTypeModel
+from filament.db.models import TaskRun as TaskRunModel
+from filament.db.models import TaskType as TaskTypeModel
 from filament.task.task_run import cancel_task_run as logic_cancel_task_run
 from filament.task.task_type_registry import lookup
 from filament.types.task import TaskRun, TaskType

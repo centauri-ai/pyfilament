@@ -15,7 +15,7 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-from filament.db_models import Base
+from filament.db.models import Base
 
 target_metadata = Base.metadata
 
