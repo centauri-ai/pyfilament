@@ -241,11 +241,3 @@ async def set_parent_task_uuid(session: AsyncSession, task_uuid: str, parent_tas
     statement = select(TaskRun).where(TaskRun.task_uuid == task_uuid)
     task_run_row = (await session.execute(statement)).scalars().one()
     task_run_row.parent_task_uuid = parent_task_uuid
-
-
-@with_session
-@beartype
-async def get_parent_task_run_uuid(session: AsyncSession, task_uuid: str) -> str | None:
-    statement = select(TaskRun).where(TaskRun.task_uuid == task_uuid)
-    task_run_row = (await session.execute(statement)).scalars().one_or_none()
-    return task_run_row.parent_task_uuid if task_run_row else None
