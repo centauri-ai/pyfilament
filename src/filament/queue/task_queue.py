@@ -14,7 +14,7 @@ def get_stream_name(task_type):
     return f'filament:task:run:{task_type.name}'
 
 
-def get_channel_name(task_uuid):
+def get_result_channel_name(task_uuid):
     return f'filament:task:result:{task_uuid}'
 
 
@@ -100,7 +100,7 @@ async def dequeue_task_run(task_type, worker_id):
 
 
 async def publish_task_result(task_result, is_final=True, message_id=None):
-    channel_name = get_channel_name(task_result.task_uuid)
+    channel_name = get_result_channel_name(task_result.task_uuid)
     logger.debug(f'{task_result.task_uuid} publishing to {channel_name} with data {task_result.model_dump_json()}')
     await r.set(channel_name, task_result.model_dump_json(), ex=DEFAULT_RESULT_TTL)
     if is_final:
@@ -114,7 +114,7 @@ async def publish_task_result(task_result, is_final=True, message_id=None):
 
 
 async def listen_for_task_result(task_uuid):
-    channel_name = get_channel_name(task_uuid)
+    channel_name = get_result_channel_name(task_uuid)
     pubsub = r.pubsub()
     await pubsub.subscribe(channel_name)
     async for message in pubsub.listen():
@@ -130,5 +130,5 @@ async def listen_for_task_result(task_uuid):
 
 
 async def get_task_result(task_uuid):
-    channel_name = get_channel_name(task_uuid)
+    channel_name = get_result_channel_name(task_uuid)
     return await r.get(channel_name)
