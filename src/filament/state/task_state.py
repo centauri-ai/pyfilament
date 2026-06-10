@@ -3,6 +3,7 @@ import json
 import logging
 from functools import wraps
 from types import NoneType
+from typing import TYPE_CHECKING
 
 from beartype import beartype
 from beartype.door import TypeHint, UnionTypeHint
@@ -18,6 +19,11 @@ from filament.db.session import async_session_scope
 from filament.logic.func_registry import FuncRegistryEntry
 from filament.logic.utils import get_json_dict, json_encode_safe, redact_strings
 from filament.task.constants import TaskState
+
+if TYPE_CHECKING:
+    from filament.task.types.task_run import FilamentTaskRun
+else:
+    FilamentTaskRun = 'filament.task.types.task_run.FilamentTaskRun'
 
 logger = logging.getLogger(__name__)
 
@@ -52,8 +58,8 @@ def get_key(key: str) -> str:
 
 @with_session
 @beartype
-async def set_heartbeat(session: AsyncSession, task_uuid: str) -> None:
-    statement = select(TaskRun).where(TaskRun.task_uuid == task_uuid)
+async def set_heartbeat(session: AsyncSession, task_run: FilamentTaskRun) -> None:
+    statement = select(TaskRun).where(TaskRun.task_uuid == task_run.uuid)
     task_run_row = (await session.execute(statement)).scalars().one()
     task_run_row.heartbeat = get_utc_now()
 
@@ -194,8 +200,8 @@ async def create_task_run_state(
 
 @with_session
 @beartype
-async def transition_state(session: AsyncSession, task_uuid: str, new_state: TaskState) -> None:
-    statement = select(TaskRun).where(TaskRun.task_uuid == task_uuid)
+async def transition_state(session: AsyncSession, task_run: FilamentTaskRun, new_state: TaskState) -> None:
+    statement = select(TaskRun).where(TaskRun.task_uuid == task_run.uuid)
     task_run_row = (await session.execute(statement)).scalars().one()
     old_state = task_run_row.state
     if old_state == new_state:
@@ -205,26 +211,18 @@ async def transition_state(session: AsyncSession, task_uuid: str, new_state: Tas
     task_run_row.state = new_state
     task_run_row.state_since = get_utc_now()
     transition = TaskRunStateTransition(
-        task_uuid=task_uuid, from_state=old_state, to_state=new_state, state_since=task_run_row.state_since
+        task_uuid=task_run.uuid, from_state=old_state, to_state=new_state, state_since=task_run_row.state_since
     )
     session.add(transition)
 
 
 @with_session
 @beartype
-async def set_task_result(
-    session: AsyncSession,
-    task_uuid: str,
-    result: Any,
-    exception: BaseException | None = None,
-    is_redact: bool = False,
-) -> None:
-    statement = select(TaskRun).where(TaskRun.task_uuid == task_uuid)
+async def set_task_result(session: AsyncSession, task_run: FilamentTaskRun) -> None:
+    statement = select(TaskRun).where(TaskRun.task_uuid == task_run.uuid)
     task_run_row = (await session.execute(statement)).scalars().one()
-    if exception is not None:
-        result = exception
-    encodable_result = json_encode_safe(result)
-    if is_redact:
+    encodable_result = json_encode_safe(task_run._result or task_run._exception)
+    if task_run.config.is_redact_output:
         encodable_result = redact_strings(encodable_result)
     task_run_row.result_json = json.dumps(encodable_result, separators=(',', ':'), default=str)
 

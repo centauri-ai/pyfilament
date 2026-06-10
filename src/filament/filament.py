@@ -3,7 +3,9 @@ import inspect
 import logging
 
 from filament.logic.call_stack import peek_task_run
+from filament.logic.events import EventManager
 from filament.queue.types.remote_task_type import FilamentRemoteTaskType
+from filament.state.register import register_task_events
 from filament.task.registry.task_type_registry import register as register_task_type
 
 
@@ -27,7 +29,9 @@ def task(*wrapper_args, **wrapper_kwargs):
         func,
         **wrapper_kwargs,
     ):
-        task_type = FilamentRemoteTaskType(func, **wrapper_kwargs)
+        events = EventManager()
+        register_task_events(events)
+        task_type = FilamentRemoteTaskType(func, events=events, **wrapper_kwargs)
         register_task_type(task_type)
         return task_type
 

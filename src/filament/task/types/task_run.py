@@ -10,7 +10,7 @@ from uuid import uuid4
 
 import anyio
 from anyio.abc import TaskGroup
-from pydantic import Field
+from pydantic import Field, PrivateAttr
 
 from filament.logic.cache_utils import (
     cache_get,
@@ -18,17 +18,12 @@ from filament.logic.cache_utils import (
     cache_set,
 )
 from filament.logic.call_stack import pop_task_run, push_task_run
+from filament.logic.events import EventManager
 from filament.logic.utils import get_function_type
 from filament.redis.logging_handler import JSONFormatter, RedisHandler
 from filament.redis.semaphore import RedisSemaphore
 from filament.redis.token_bucket import RedisTokenBucket
-from filament.state.task_run_state import initialize_task_run_state
-from filament.state.task_state import (
-    is_canceled,
-    set_heartbeat,
-    set_task_result,
-    transition_state,
-)
+from filament.state.task_state import is_canceled
 from filament.task.constants import DEFAULT_HEARTBEAT_INTERVAL, DEFAULT_MONITOR_INTERVAL, TaskState
 from filament.task.types.base import FilamentBaseModel
 from filament.task.types.task_config import FilamentTaskConfig
@@ -45,6 +40,7 @@ class FilamentTaskRun(FilamentBaseModel):
     task_kwargs: dict = Field(default={})
     name: str
     worker_id: str | None = None
+    _events: EventManager = PrivateAttr()
 
     def __init__(
         self,
@@ -55,6 +51,7 @@ class FilamentTaskRun(FilamentBaseModel):
         uuid=None,
         config: FilamentTaskConfig | dict | None = None,
         worker_id: str | None = None,
+        events: EventManager | None = None,
     ):
         if config is not None:
             if isinstance(config, dict):
@@ -75,6 +72,12 @@ class FilamentTaskRun(FilamentBaseModel):
         if name is None:
             name = f'{type.name}({uuid})'
 
+        if events is None:
+            if type.events is not None:
+                events = type.events
+            else:
+                events = EventManager()
+
         super().__init__(
             name=name,
             type=type,
@@ -84,6 +87,7 @@ class FilamentTaskRun(FilamentBaseModel):
             config=config,
             worker_id=worker_id,
         )
+        self._events = events
 
     def __hash__(self):
         return self.uuid.__hash__()
@@ -112,7 +116,7 @@ class FilamentTaskRun(FilamentBaseModel):
 
     async def _start_heartbeat(self) -> None:
         while not self._done_event.is_set():
-            await set_heartbeat(self.uuid)
+            await self._events.trigger('task_run.heartbeat', self)
             await anyio.sleep(self.config.heartbeat_interval or DEFAULT_HEARTBEAT_INTERVAL)
 
     async def _start_cancel_monitor(self, task_group: TaskGroup) -> None:
@@ -165,9 +169,9 @@ class FilamentTaskRun(FilamentBaseModel):
 
     @asynccontextmanager
     async def _transition_running_state(self):
-        await transition_state(self.uuid, TaskState.RUNNING)
+        await self._events.trigger('task_run.state_transition', self, TaskState.RUNNING)
         yield
-        await transition_state(self.uuid, TaskState.SUCCESS)
+        await self._events.trigger('task_run.state_transition', self, TaskState.SUCCESS)
 
     @asynccontextmanager
     async def _transition_timeout_state(self):
@@ -175,7 +179,7 @@ class FilamentTaskRun(FilamentBaseModel):
             with anyio.fail_after(self.config.timeout):
                 yield
         except TimeoutError:
-            await transition_state(self.uuid, TaskState.TIMEOUT)
+            await self._events.trigger('task_run.state_transition', self, TaskState.TIMEOUT)
             raise
 
     @asynccontextmanager
@@ -183,7 +187,7 @@ class FilamentTaskRun(FilamentBaseModel):
         try:
             yield
         except anyio.get_cancelled_exc_class():
-            await transition_state(self.uuid, TaskState.CANCELLED)
+            await self._events.trigger('task_run.state_transition', self, TaskState.CANCELLED)
             raise
 
     @asynccontextmanager
@@ -192,7 +196,7 @@ class FilamentTaskRun(FilamentBaseModel):
             yield
         except Exception as e:
             self._logger.exception(e)
-            await transition_state(self.uuid, TaskState.FAILURE)
+            await self._events.trigger('task_run.state_transition', self, TaskState.FAILURE)
             raise
 
     def _retry(self, func):
@@ -212,7 +216,7 @@ class FilamentTaskRun(FilamentBaseModel):
                 except retry_exc_types as e:
                     if i < self.config.tries - 1:
                         self._logger.exception(e)
-                        await transition_state(self.uuid, TaskState.RETRYING)
+                        await self._events.trigger('task_run.state_transition', self, TaskState.RETRYING)
                         if self.config.delay:
                             sleep_time = self.config.delay * self.config.backoff_base**i * random.uniform(1.0, 1.5)
                             await anyio.sleep(sleep_time)
@@ -231,7 +235,7 @@ class FilamentTaskRun(FilamentBaseModel):
             if await cache_has_key(key) and not self.config.refresh_cache:
                 result = await cache_get(key)
                 await anyio.sleep(random.uniform(0.1, 2.0))
-                await transition_state(self.uuid, TaskState.CACHED)
+                await self._events.trigger('task_run.state_transition', self, TaskState.CACHED)
                 return result
             result = await func(*args, **kwargs)
             await cache_set(key, result, ttl=self.config.cache_ttl)
@@ -296,16 +300,11 @@ class FilamentTaskRun(FilamentBaseModel):
         finally:
             await self._result_send.aclose()
             self._done_event.set()
-            await set_task_result(
-                self.uuid,
-                self._result,
-                self._exception,
-                is_redact=self.config.is_redact_output,
-            )
+            await self._events.trigger('task_run.after_call', self)
             task_group.cancel_scope.cancel()
 
     async def call(self):
-        await initialize_task_run_state(self)
+        await self._events.trigger('task_run.before_call', self)
         async with anyio.create_task_group() as task_group:
             if self.config.heartbeat:
                 task_group.start_soon(self._start_heartbeat)

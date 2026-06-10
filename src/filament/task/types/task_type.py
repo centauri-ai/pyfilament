@@ -4,6 +4,7 @@ import types
 
 from pydantic import Field, PrivateAttr
 
+from filament.logic.events import EventManager
 from filament.logic.func_registry import lookup_func_entry, register_func
 from filament.task.types.base import FilamentBaseModel
 from filament.task.types.task_config import FilamentTaskConfig
@@ -15,12 +16,14 @@ class FilamentTaskType(FilamentBaseModel):
     name: str
     _func: callable = PrivateAttr()
     config: FilamentTaskConfig = Field(default_factory=lambda: FilamentTaskConfig())
+    _events: EventManager = PrivateAttr()
 
     def __init__(
         self,
         _func=None,
         func_address=None,
         name=None,
+        events: EventManager | None = None,
         **config_kwargs,
     ):
         if _func is not None:
@@ -32,11 +35,14 @@ class FilamentTaskType(FilamentBaseModel):
         if name is None:
             name = func_address
         config = FilamentTaskConfig(**config_kwargs)
+        if events is None:
+            events = EventManager()
         super().__init__(
             func_address=func_address,
             name=name,
             config=config,
         )
+        self._events = events
         self._func = _func
         self._logger = logging.getLogger(func_address)
 
@@ -50,6 +56,7 @@ class FilamentTaskType(FilamentBaseModel):
             task_args=task_args,
             task_kwargs=task_kwargs,
             config=self.config,
+            events=self._events,
         )
 
     def __get__(self, instance, owner):
