@@ -45,6 +45,7 @@ class FilamentRemoteTaskType(FilamentTaskType):
                 continue
             try:
                 filament_task_run = FilamentTaskRun.model_validate_json(filament_task_run_json)
+                filament_task_run._events = self._events
                 filament_task_run.worker_id = worker_id
                 filament_task_run.config.propagate = True  # always propagate so we can catch and serialize
             except Exception as e:

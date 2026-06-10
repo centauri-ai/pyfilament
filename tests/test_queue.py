@@ -8,6 +8,7 @@ async def _run_parent():
     await anyio.sleep(0.1)
     child_task = await _run_child.request()
     result = await child_task
+    await anyio.sleep(0.1)
     return f'parent, {result}'
 
 
