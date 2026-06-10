@@ -2,8 +2,8 @@ import json
 from datetime import datetime
 
 import strawberry
-from strawberry import Info
 from sqlalchemy import select
+from strawberry import Info
 
 from filament.db.models import TaskRun as TaskRunModel
 from filament.redis.client import r

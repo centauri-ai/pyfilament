@@ -8,12 +8,11 @@ from filament.queue.task_queue import (
     publish_task_result,
     setup_queue,
 )
-from filament.state.task_run_state import initialize_task_run_state
-
-from filament.task.types.task_run import FilamentTaskRun
-from filament.task.types.task_type import FilamentTaskType
 from filament.queue.types.remote_task_result import FilamentRemoteTaskResult
 from filament.queue.types.remote_task_run import FilamentRemoteTaskRun
+from filament.state.task_run_state import initialize_task_run_state
+from filament.task.types.task_run import FilamentTaskRun
+from filament.task.types.task_type import FilamentTaskType
 
 
 class FilamentRemoteTaskType(FilamentTaskType):

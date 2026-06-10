@@ -2,12 +2,9 @@ import functools
 import inspect
 import logging
 
-
-from filament.task.registry.task_type_registry import register as register_task_type
 from filament.logic.call_stack import peek_task_run
-
-
 from filament.queue.types.remote_task_type import FilamentRemoteTaskType
+from filament.task.registry.task_type_registry import register as register_task_type
 
 
 def get_logger():

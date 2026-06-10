@@ -5,7 +5,6 @@ import types
 from pydantic import Field, PrivateAttr
 
 from filament.logic.func_registry import lookup_func_entry, register_func
-
 from filament.task.types.base import FilamentBaseModel
 from filament.task.types.task_config import FilamentTaskConfig
 from filament.task.types.task_run import FilamentTaskRun

@@ -1,6 +1,7 @@
+import anyio
+
 from filament.filament import task
 from filament.hooks import create_all_task_type_states
-import anyio
 
 
 @task

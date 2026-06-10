@@ -5,8 +5,8 @@ from contextlib import asynccontextmanager
 import anyio
 from redis.asyncio import Redis
 
-from filament.redis.client import r
 from filament.logic.utils import now
+from filament.redis.client import r
 
 logger = logging.getLogger(__name__)
 

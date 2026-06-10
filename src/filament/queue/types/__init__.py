@@ -1,7 +1,8 @@
-from filament.logic.type_checking import export_models, rebuild_models, beartype_models
-from .remote_task_type import FilamentRemoteTaskType
-from .remote_task_run import FilamentRemoteTaskRun
+from filament.logic.type_checking import beartype_models, export_models, rebuild_models
+
 from .remote_task_result import FilamentRemoteTaskResult
+from .remote_task_run import FilamentRemoteTaskRun
+from .remote_task_type import FilamentRemoteTaskType
 
 MODELS = [
     FilamentRemoteTaskType,

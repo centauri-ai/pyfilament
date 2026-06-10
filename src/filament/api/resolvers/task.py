@@ -7,11 +7,11 @@ from sqlalchemy.sql import func
 from strawberry import ID, Info
 from werkzeug.exceptions import BadRequest, NotFound
 
+from filament.api.types.task import TaskRun, TaskType
 from filament.db.models import TaskRun as TaskRunModel
 from filament.db.models import TaskType as TaskTypeModel
 from filament.state.task_run_state import cancel_task_run as logic_cancel_task_run
 from filament.task.registry.task_type_registry import lookup
-from filament.api.types.task import TaskRun, TaskType
 
 DEFAULT_MAX_DAYS = 3
 

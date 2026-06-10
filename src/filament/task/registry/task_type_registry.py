@@ -1,5 +1,6 @@
-from beartype import beartype
 from typing import TYPE_CHECKING
+
+from beartype import beartype
 
 if TYPE_CHECKING:
     from filament.task.types.task_type import FilamentTaskType

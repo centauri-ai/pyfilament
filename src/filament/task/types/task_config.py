@@ -1,10 +1,10 @@
 from pydantic import Field
 
 from filament.logic.cache_keys import hash_cache_key
-from filament.task.types.base import FilamentBaseModel
 from filament.task.constants import DEFAULT_HEARTBEAT_INTERVAL, DEFAULT_MONITOR_INTERVAL
-from filament.task.types.exception_type import FilamentExceptionType
+from filament.task.types.base import FilamentBaseModel
 from filament.task.types.cache_key import FilamentCacheKey
+from filament.task.types.exception_type import FilamentExceptionType
 
 
 class FilamentTaskConfig(FilamentBaseModel):

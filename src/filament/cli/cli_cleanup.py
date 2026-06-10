@@ -3,12 +3,12 @@ import sys
 from datetime import datetime, timedelta, timezone
 
 import anyio
+from plasma import Plasma
 from sqlalchemy import select
 
 from filament.db.models import TaskRun, TaskState
 from filament.db.session import async_session_scope
 from filament.state.task_run_state import cancel_task_run, delete_task_run
-from plasma import Plasma
 
 
 def setup_logging():

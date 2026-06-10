@@ -1,7 +1,7 @@
 import sys
 
-from pydantic import BaseModel
 from beartype import beartype
+from pydantic import BaseModel
 
 
 def export_models(models: list[type[BaseModel]]):

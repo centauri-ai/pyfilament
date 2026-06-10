@@ -2,8 +2,8 @@ import logging
 
 import anyio
 
-from filament.redis.client import r
 from filament.logic.utils import now
+from filament.redis.client import r
 
 logger = logging.getLogger(__name__)
 

@@ -1,13 +1,13 @@
-from typing import TYPE_CHECKING
 import json
 import traceback
+from typing import TYPE_CHECKING
 
 from pydantic import Field, PrivateAttr
 
 from filament.logic.module_type_registry import lookup_module_type, register_module_type
 from filament.logic.utils import json_encode_safe
-from filament.task.types.base import FilamentBaseModel
 from filament.queue.types.remote_exception import FilamentRemoteException
+from filament.task.types.base import FilamentBaseModel
 
 if TYPE_CHECKING:
     from filament.queue.types.remote_task_type import FilamentRemoteTaskType
