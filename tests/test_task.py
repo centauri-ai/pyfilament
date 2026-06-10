@@ -4,20 +4,20 @@ import anyio
 
 
 @task
-async def test_task_parent():
+async def _run_parent():
     await anyio.sleep(0.1)
-    result = await test_task_child()
+    result = await _run_child()
     await anyio.sleep(0.1)
     return f'parent, {result}'
 
 
 @task
-async def test_task_child():
+async def _run_child():
     await anyio.sleep(0.1)
     return 'child'
 
 
 async def test_task():
     await create_all_task_type_states()
-    result = await test_task_parent()
+    result = await _run_parent()
     assert result == 'parent, child'
