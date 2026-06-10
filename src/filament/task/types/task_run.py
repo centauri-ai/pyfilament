@@ -72,12 +72,6 @@ class FilamentTaskRun(FilamentBaseModel):
         if name is None:
             name = f'{type.name}({uuid})'
 
-        if events is None:
-            if type.events is not None:
-                events = type.events
-            else:
-                events = EventManager()
-
         super().__init__(
             name=name,
             type=type,
@@ -87,6 +81,12 @@ class FilamentTaskRun(FilamentBaseModel):
             config=config,
             worker_id=worker_id,
         )
+
+        if events is None:
+            if self.type._events is not None:
+                events = self.type._events
+            else:
+                events = EventManager()
         self._events = events
 
     def __hash__(self):
