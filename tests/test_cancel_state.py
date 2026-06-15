@@ -19,7 +19,7 @@ _global_state = {'parent_set': False, 'child_set': False}
 
 @_task
 async def _run_parent():
-    await anyio.sleep(0.1)
+    await anyio.sleep(0.5)
     _global_state['parent_set'] = True
     result = await _run_child()
     await anyio.sleep(0.1)
@@ -28,7 +28,7 @@ async def _run_parent():
 
 @_task
 async def _run_child():
-    await anyio.sleep(0.1)
+    await anyio.sleep(0.5)
     _global_state['child_set'] = True
     return 'child'
 
@@ -39,7 +39,7 @@ async def test_cancel():
 
     async def _cancel_parent_task():
         nonlocal parent_task
-        await anyio.sleep(0.15)
+        await anyio.sleep(0.75)
         assert parent_task is not None, 'Parent task not started'
         await cancel_task_run_by_uuid(parent_task.uuid)
 
