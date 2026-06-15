@@ -3,6 +3,6 @@
 Initial setup instructions
 
 ```
-poetry sync
-poetry run alembic upgrade head
+uv sync --all-extras
+uv run alembic upgrade head
 ```

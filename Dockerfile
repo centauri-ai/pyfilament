@@ -17,14 +17,13 @@ ENV PYENV_ROOT=/root/.pyenv
 ENV PATH=$PYENV_ROOT/bin:$PATH
 RUN pyenv install
 RUN pyenv global $(cat .python-version)
-RUN pyenv exec pip install poetry
+RUN pyenv exec pip install uv
 
 FROM ubuntu-python-base AS filament
 WORKDIR /app
-COPY pyproject.toml poetry.lock ./
-RUN pyenv exec poetry config virtualenvs.in-project true
-RUN pyenv exec poetry install --no-root --only main
+COPY pyproject.toml uv.lock ./
+RUN pyenv exec uv sync --no-dev
 
 COPY . .
 
-RUN pyenv exec poetry run python -m compileall -q -j 0 .
+RUN pyenv exec uv run python -m compileall -q -j 0 .

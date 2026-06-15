@@ -5,24 +5,24 @@ image-ui:
 	podman build -f ui/Dockerfile -t pyfilament/ui:dev-latest ui
 
 install:
-	poetry install
+	uv sync --all-extras
 
 upgrade:
-	poetry run alembic upgrade head
+	uv run alembic upgrade head
 
 lint:
-	poetry run ruff check src/ --ignore F401,E402,E731,F841,F403,E712,E722,E711,F541
+	uv run ruff check src/ --ignore F401,E402,E731,F841,F403,E712,E722,E711,F541
 
 test:
-	poetry run pytest
+	uv run pytest
 
 test-coverage:
-	poetry run coverage run -m pytest
+	uv run coverage run -m pytest
 
 coverage-clean:
 	rm -rf .coverage*
 
 coverage-report:
-	poetry run coverage xml -o .coverage.xml && poetry run coverage html -d .coverage_html && poetry run diff-cover .coverage.xml --compare-branch=main --html-report .coverage_diff.html
+	uv run coverage xml -o .coverage.xml && uv run coverage html -d .coverage_html && uv run diff-cover .coverage.xml --compare-branch=main --html-report .coverage_diff.html
 
 coverage: coverage-clean test-coverage coverage-report
