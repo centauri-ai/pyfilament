@@ -8,7 +8,7 @@ spec:
     spec:
       containers:
         - name: pyfilament-ui
-          image: ghcr.io/pyfilament/pyfilament-ui:latest
+          image: ghcr.io/centauri-ai/pyfilament-ui:latest
           command: ["npm", "run", "preview"]
           readinessProbe:
             exec:

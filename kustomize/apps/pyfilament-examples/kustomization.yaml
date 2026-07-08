@@ -10,5 +10,5 @@ labels:
 resources:
 - cronjob.yaml
 images:
-- name: ghcr.io/pyfilament/pyfilament
+- name: ghcr.io/centauri-ai/pyfilament
   newTag: 0.1.0

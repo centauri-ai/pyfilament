@@ -8,7 +8,7 @@ spec:
     spec:
       containers:
         - name: pyfilament-website
-          image: ghcr.io/pyfilament/pyfilament-website:latest
+          image: ghcr.io/centauri-ai/pyfilament-website:latest
           readinessProbe:
             exec:
               command:

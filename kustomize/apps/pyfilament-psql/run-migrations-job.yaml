@@ -7,7 +7,7 @@ spec:
     spec:
       containers:
         - name: run-migrations
-          image: ghcr.io/pyfilament/pyfilament:latest
+          image: ghcr.io/centauri-ai/pyfilament:latest
           env:
             - name: FILAMENT_DB_URI
               value: postgresql+asyncpg://postgres:postgres@pyfilament-psql:5432/pyfilament

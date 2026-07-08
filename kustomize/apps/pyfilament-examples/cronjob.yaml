@@ -11,7 +11,7 @@ spec:
         spec:
           containers:
             - name: pyfilament-examples
-              image: ghcr.io/pyfilament/pyfilament:latest
+              image: ghcr.io/centauri-ai/pyfilament:latest
               env:
                 - name: FILAMENT_REDIS_HOST
                   value: pyfilament-redis

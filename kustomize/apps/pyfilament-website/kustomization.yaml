@@ -11,5 +11,5 @@ resources:
 - deployment.yaml
 - service.yaml
 images:
-- name: ghcr.io/pyfilament/pyfilament-website
+- name: ghcr.io/centauri-ai/pyfilament-website
   newTag: 0.1.0
